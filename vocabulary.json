@@ -1,0 +1,28 @@
+{
+  "Schulsachen": {
+    "title": "Schulsachen (Školní pomůcky)",
+    "pairs": [
+      { "de": "der Bleistift", "cz": "tužka", "img": "bleistift.png" },
+      { "de": "das Buch", "cz": "kniha", "img": "buch.png" },
+      { "de": "die Schere", "cz": "nůžky", "img": "schere.png" },
+      { "de": "der Radiergummi", "cz": "guma", "img": "radiergummi.png" },
+      { "de": "das Heft", "cz": "sešit", "img": "heft.png" },
+      { "de": "das Lineal", "cz": "pravítko", "img": "lineal.png" },
+      { "de": "die Schultasche", "cz": "školní taška", "img": "schultasche.png" },
+      { "de": "der Kuli", "cz": "propiska", "img": "kuli.png" }
+    ]
+  },
+  "Familie": {
+    "title": "Meine Familie (Moje rodina)",
+    "pairs": [
+      { "de": "der Vater", "cz": "otec", "img": "vater.png" },
+      { "de": "die Mutter", "cz": "matka", "img": "mutter.png" },
+      { "de": "der Bruder", "cz": "bratr", "img": "bruder.png" },
+      { "de": "die Schwester", "cz": "sestra", "img": "schwester.png" },
+      { "de": "der Opa", "cz": "dědeček", "img": "opa.png" },
+      { "de": "die Oma", "cz": "babička", "img": "oma.png" },
+      { "de": "der Sohn", "cz": "syn", "img": "sohn.png" },
+      { "de": "die Tochter", "cz": "dcera", "img": "tochter.png" }
+    ]
+  }
+}
