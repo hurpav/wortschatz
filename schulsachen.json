@@ -4,7 +4,7 @@
       "id": 1,
       "de": "der Rucksack",
       "cz": "batoh",
-      "image": "images/rucksack.jpg",
+      "image": "images/rucksack.png",
       "blooket": {
         "question": "Co znamená 'der Rucksack'?",
         "answers": ["batoh", "penál", "kniha", "pravítko"],
@@ -16,7 +16,7 @@
       "id": 2,
       "de": "das Mäppchen",
       "cz": "penál",
-      "image": "images/maeppchen.jpg",
+      "image": "images/maeppchen.png",
       "blooket": {
         "question": "Jak se německy řekne 'penál'?",
         "answers": ["das Mäppchen", "das Buch", "der Bleistift", "die Schere"],
@@ -28,7 +28,7 @@
       "id": 3,
       "de": "das Heft",
       "cz": "sešit",
-      "image": "images/heft.jpg",
+      "image": "images/heft.png",
       "blooket": {
         "question": "Přelož: das Heft",
         "answers": ["sešit", "kniha", "učebnice", "papír"],
@@ -40,7 +40,7 @@
       "id": 4,
       "de": "das Buch",
       "cz": "kniha",
-      "image": "images/buch.jpg",
+      "image": "images/buch.png",
       "blooket": {
         "question": "Co znamená 'das Buch'?",
         "answers": ["kniha", "sešit", "blok", "penál"],
@@ -52,7 +52,7 @@
       "id": 5,
       "de": "der Textmarker",
       "cz": "zvýrazňovač",
-      "image": "images/textmarker.jpg",
+      "image": "images/textmarker.png",
       "blooket": {
         "question": "Jak se německy řekne 'zvýrazňovač'?",
         "answers": ["der Textmarker", "der Bleistift", "der Kugelschreiber", "der Pinsel"],
@@ -64,7 +64,7 @@
       "id": 6,
       "de": "der Radiergummi",
       "cz": "guma",
-      "image": "images/radiergummi.jpg",
+      "image": "images/radiergummi.png",
       "blooket": {
         "question": "Přelož: der Radiergummi",
         "answers": ["guma", "pravítko", "ořezávátko", "lepidlo"],
@@ -76,7 +76,7 @@
       "id": 7,
       "de": "der Anspitzer",
       "cz": "ořezávátko",
-      "image": "images/anspitzer.jpg",
+      "image": "images/anspitzer.png",
       "blooket": {
         "question": "Co znamená 'der Anspitzer'?",
         "answers": ["ořezávátko", "guma", "nůžky", "kružítko"],
@@ -88,7 +88,7 @@
       "id": 8,
       "de": "das Lineal",
       "cz": "pravítko",
-      "image": "images/lineal.jpg",
+      "image": "images/lineal.png",
       "blooket": {
         "question": "Jak se německy řekne 'pravítko'?",
         "answers": ["das Lineal", "das Buch", "der Kleber", "die Schere"],
@@ -100,7 +100,7 @@
       "id": 9,
       "de": "der Kleber",
       "cz": "lepidlo",
-      "image": "images/kleber.jpg",
+      "image": "images/kleber.png",
       "blooket": {
         "question": "Přelož: der Kleber",
         "answers": ["lepidlo", "páska", "guma", "nůžky"],
@@ -112,7 +112,7 @@
       "id": 10,
       "de": "die Schere",
       "cz": "nůžky",
-      "image": "images/schere.jpg",
+      "image": "images/schere.png",
       "blooket": {
         "question": "Co znamená 'die Schere'?",
         "answers": ["nůžky", "lepidlo", "pravítko", "papír"],
@@ -124,7 +124,7 @@
       "id": 11,
       "de": "der Buntstift",
       "cz": "pastelka",
-      "image": "images/buntstift.jpg",
+      "image": "images/buntstift.png",
       "blooket": {
         "question": "Jak se německy řekne 'pastelka'?",
         "answers": ["der Buntstift", "der Bleistift", "der Pinsel", "der Füller"],
@@ -136,7 +136,7 @@
       "id": 12,
       "de": "der Bleistift",
       "cz": "tužka",
-      "image": "images/bleistift.jpg",
+      "image": "images/bleistift.png",
       "blooket": {
         "question": "Přelož: der Bleistift",
         "answers": ["tužka", "pero", "pastelka", "zvýrazňovač"],
@@ -148,7 +148,7 @@
       "id": 13,
       "de": "der Ordner",
       "cz": "pořadač / šanon",
-      "image": "images/ordner.jpg",
+      "image": "images/ordner.png",
       "blooket": {
         "question": "Co znamená 'der Ordner'?",
         "answers": ["pořadač / šanon", "sešit", "kniha", "blok"],
@@ -160,7 +160,7 @@
       "id": 14,
       "de": "der Taschenrechner",
       "cz": "kalkulačka",
-      "image": "images/taschenrechner.jpg",
+      "image": "images/taschenrechner.png",
       "blooket": {
         "question": "Jak se německy řekne 'kalkulačka'?",
         "answers": ["der Taschenrechner", "das Lineal", "der Zirkel", "das Buch"],
@@ -172,7 +172,7 @@
       "id": 15,
       "de": "der Zirkel",
       "cz": "kružítko",
-      "image": "images/zirkel.jpg",
+      "image": "images/zirkel.png",
       "blooket": {
         "question": "Přelož: der Zirkel",
         "answers": ["kružítko", "pravítko", "ořezávátko", "nůžky"],
@@ -184,7 +184,7 @@
       "id": 16,
       "de": "der Pinsel",
       "cz": "štětec",
-      "image": "images/pinsel.jpg",
+      "image": "images/pinsel.png",
       "blooket": {
         "question": "Co znamená 'der Pinsel'?",
         "answers": ["štětec", "pastelka", "tužka", "lepidlo"],
@@ -196,7 +196,7 @@
       "id": 17,
       "de": "der Malkasten",
       "cz": "vodové barvy / paleta",
-      "image": "images/malkasten.jpg",
+      "image": "images/malkasten.png",
       "blooket": {
         "question": "Jak se řekne německy 'vodové barvy'?",
         "answers": ["der Malkasten", "der Pinsel", "das Buch", "das Heft"],
@@ -208,7 +208,7 @@
       "id": 18,
       "de": "der Notizblock",
       "cz": "blok / zápisník",
-      "image": "images/notizblock.jpg",
+      "image": "images/notizblock.png",
       "blooket": {
         "question": "Přelož: der Notizblock",
         "answers": ["blok / zápisník", "sešit", "kniha", "učebnice"],
