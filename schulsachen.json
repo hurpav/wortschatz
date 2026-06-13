@@ -38,14 +38,14 @@
     },
     {
       "id": 4,
-      "de": "das Buch",
-      "cz": "kniha",
-      "image": "images/schulsachen/buch.png",
+      "de": "das Lehrbuch",
+      "cz": "učebnice",
+      "image": "images/schulsachen/Lehrbuch.png",
       "blooket": {
-        "question": "Co znamená 'das Buch'?",
-        "answers": ["kniha", "sešit", "blok", "penál"],
+        "question": "Co znamená 'das Lehrbuch'?",
+        "answers": ["učebnice", "sešit", "blok", "penál"],
         "time_limit": 20,
-        "correct_answer": "kniha"
+        "correct_answer": "učebnice"
       }
     },
     {
