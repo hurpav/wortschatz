@@ -74,11 +74,11 @@
     },
     {
       "id": 7,
-      "de": "der Anspitzer",
+      "de": "der Spitzer",
       "cz": "ořezávátko",
       "image": "images/anspitzer.png",
       "blooket": {
-        "question": "Co znamená 'der Anspitzer'?",
+        "question": "Co znamená 'der Spitzer'?",
         "answers": ["ořezávátko", "guma", "nůžky", "kružítko"],
         "time_limit": 20,
         "correct_answer": "ořezávátko"
