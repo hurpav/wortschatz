@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Centrální Generátor Domina z GitHub Databáze</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f4f8; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .setup-box { background: #ecf0f1; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; }
+        select, button { padding: 10px; font-size: 16px; border-radius: 4px; border: 1px solid #bdc3c7; }
+        button { background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #219653; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #34495e; color: white; }
+        .status { font-weight: bold; color: #2980b9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎲 Domino Generátor (Propojeno s GitHubem)</h1>
+    
+    <div class="setup-box">
+        <div>
+            <label><strong>Vyberte téma z databáze:</strong></label>
+            <select id="themeSelect" onchange="loadDataFromGitHub()">
+                <option value="">-- Vyberte téma --</option>
+                <option value="schulsachen.json">Schulsachen (Školní pomůcky)</option>
+            </select>
+        </div>
+        <div id="statusMessage" class="status">Čekám na výběr tématu...</div>
+        <button onclick="generatePDF()">🖨️ Vygenerovat PDF (16 karet)</button>
+    </div>
+
+    <h3>Aktuálně načtená slovíčka pro generování:</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Německy (DE)</th>
+                <th>Česky (CZ)</th>
+                <th>Obrázek (cesta)</th>
+            </tr>
+        </thead>
+        <tbody id="vocabTable">
+            <tr><td colspan="3" style="text-align:center; color:#7f8c8d;">Žádná data nejsou načtena</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // 1. ZDE VYPLŇ SVÉ UŽIVATELSKÉ JMÉNO NA GITHUBU:
+    const githubUser = "hurpav"; 
+    const repoName = "wortschatz";
+
+    let loadedWords = [];
+    let currentTitle = "";
+
+    async function loadDataFromGitHub() {
+        const select = document.getElementById("themeSelect");
+        const filename = select.value;
+        const status = document.getElementById("statusMessage");
+        
+        if (!filename) return;
+
+        status.innerText = "🔄 Stahuji data z GitHubu...";
+
+        // Přímé stažení přes raw GitHub s využitím parametru proti cachování
+        const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${filename}?_ts=` + new Date().getTime();
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Soubor se nepodařilo na GitHubu najít. Zkontrolujte, zda je větev 'main' správně.");
+            
+            const data = await response.json();
+            
+            console.log("Obsah staženého JSONu:", data);
+            
+            if (Array.isArray(data)) {
+                loadedWords = data;
+            } else if (data.words && Array.isArray(data.words)) {
+                loadedWords = data.words;
+            } else if (data.slovicka && Array.isArray(data.slovicka)) {
+                loadedWords = data.slovicka;
+            } else {
+                const foundKey = Object.keys(data).find(key => Array.isArray(data[key]));
+                if (foundKey) {
+                    loadedWords = data[foundKey];
+                } else {
+                    loaded
