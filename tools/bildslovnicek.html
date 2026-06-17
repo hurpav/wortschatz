@@ -485,19 +485,25 @@
         });
     }
 
-    function formatPracticeItem(item) {
+   function formatPracticeItem(item) {
         if (!item) return "";
+        // Definujeme podtržítko s pevnou mezerou pro web, aby se neslepovalo
+        const blank = "_ "; 
+        
         if (item.artikel && item.de) {
-            let hiddenArtikel = "_ ".repeat(item.artikel.length).trim();
+            let hiddenArtikel = blank.repeat(item.artikel.length).trim();
             let word = item.de;
-            let hiddenWord = word[0] + word.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
-            return `${hiddenArtikel}   ${hiddenWord}`; 
+            // První písmeno necháme, zbytek nahradíme podtržítkem s mezerou
+            let hiddenWord = word[0] + " " + word.slice(1)
+                .replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, blank);
+            return `${hiddenArtikel}     ${hiddenWord.trim()}`; 
         } 
+        
         let fullWord = item.de || "";
         return fullWord.split(' ').map(part => {
             if (part.length <= 1) return part;
-            return part[0] + part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
-        }).join(' ');
+            return part[0] + " " + part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, blank);
+        }).join('   ');
     }
 
     function updatePreview() {
