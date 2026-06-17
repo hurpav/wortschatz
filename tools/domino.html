@@ -23,7 +23,7 @@
 <div class="container">
     <h1>🎲 Domino Generátor (Propojeno s GitHubem)</h1>
     
-    <div class="setup-box">
+<div class="setup-box">
         <div>
             <label><strong>Vyberte téma z databáze:</strong></label>
             <select id="themeSelect" onchange="loadDataFromGitHub()">
@@ -33,6 +33,10 @@
         </div>
         <div id="statusMessage" class="status">Čekám na výběr tématu...</div>
         <button onclick="generatePDF()">🖨️ Vygenerovat PDF</button>
+        
+        <a href="../index.html" style="text-decoration: none;">
+            <button type="button" style="background: #7f8c8d;">🏠 Zpět do Toolboxu</button>
+        </a>
     </div>
 
     <h3>Aktuálně načtená slovíčka pro generování:</h3>
