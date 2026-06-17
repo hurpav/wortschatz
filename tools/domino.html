@@ -51,7 +51,6 @@
 </div>
 
 <script>
-    // 1. ZDE VYPLŇ SVÉ UŽIVATELSKÉ JMÉNO NA GITHUBU:
     const githubUser = "hurpav"; 
     const repoName = "wortschatz";
 
@@ -67,16 +66,13 @@
 
         status.innerText = "🔄 Stahuji data z GitHubu...";
 
-        // Přímé stažení přes raw GitHub s využitím parametru proti cachování
         const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${filename}?_ts=` + new Date().getTime();
 
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error("Soubor se nepodařilo na GitHubu najít. Zkontrolujte, zda je větev 'main' správně.");
+            if (!response.ok) throw new Error("Soubor se nepodařilo na GitHubu najít.");
             
             const data = await response.json();
-            
-            console.log("Obsah staženého JSONu:", data);
             
             if (Array.isArray(data)) {
                 loadedWords = data;
@@ -89,4 +85,140 @@
                 if (foundKey) {
                     loadedWords = data[foundKey];
                 } else {
-                    loaded
+                    loadedWords = [];
+                }
+            }
+            
+            currentTitle = data.title || data.theme || filename.replace('.json', '');
+
+            if (loadedWords.length === 0) {
+                throw new Error("V JSONu nebyla nalezena žádná slovíčka.");
+            }
+
+            let html = "";
+            loadedWords.forEach(word => {
+                html += `<tr>
+                    <td><strong>${word.de || ''}</strong></td>
+                    <td>${word.cz || ''}</td>
+                    <td><code>${word.image || ''}</code></td>
+                </tr>`;
+            });
+            document.getElementById("vocabTable").innerHTML = html;
+            status.innerText = `✅ Úspěšně načteno: ${currentTitle} (${loadedWords.length} slovíček)`;
+
+        } catch (error) {
+            console.error(error);
+            status.innerText = "❌ Chyba: " + error.message;
+            alert("Nepodařilo se načíst data. " + error.message);
+        }
+    }
+
+    function toDataURL(url) {
+        return new Promise((resolve, reject) => {
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${url}`;
+            }
+
+            const img = new Image();
+            img.crossOrigin = 'Anonymous'; 
+            
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            
+            img.onerror = function() {
+                reject(new Error(`Nepodařilo se načíst obrázek z adresy: ${url}`));
+            };
+            
+            img.src = url + '?_ts=' + new Date().getTime();
+        });
+    }
+
+    async function generatePDF() {
+        if (loadedWords.length === 0) {
+            alert("Nejprve vyberte téma!");
+            return;
+        }
+
+        if (loadedWords.length < 8) {
+            alert("Potřebujete alespoň 8 slovíček!");
+            return;
+        }
+
+        const removeAccents = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+        doc.setFont("Helvetica", "normal");
+
+        let dominoCards = [];
+        for (let i = 0; i < 16; i++) {
+            let currentIdx = i % loadedWords.length;
+            let prevIdx = (i === 0) ? (loadedWords.length - 1) : ((i - 1) % loadedWords.length);
+            dominoCards.push({ 
+                leftText: loadedWords[prevIdx].cz, 
+                leftImg: loadedWords[prevIdx].image, 
+                rightText: loadedWords[currentIdx].de 
+            });
+        }
+
+        const cardWidth = 68;   
+        const cardHeight = 35;  
+        const startX = 14;      
+        const startY = 25;      
+        const gapX = 3;         
+        const gapY = 5;         
+
+        for (let index = 0; index < dominoCards.length; index++) {
+            if (index === 8) doc.addPage();
+
+            let card = dominoCards[index];
+            let cardOnPage = index % 8;
+            
+            let col = cardOnPage % 4;
+            let row = Math.floor(cardOnPage / 4);
+            
+            let x = startX + col * (cardWidth + gapX);
+            let y = startY + row * (cardHeight + gapY);
+
+            doc.setDrawColor(0).setLineWidth(0.4).setFillColor(255, 255, 255).rect(x, y, cardWidth, cardHeight, "FD");
+            
+            doc.setDrawColor(150).setLineWidth(0.2).setLineDashPattern([1, 1], 0);
+            doc.line(x + cardWidth / 2, y, x + cardWidth / 2, y + cardHeight);
+            doc.setLineDashPattern([], 0);
+
+            doc.setFontSize(9).setTextColor(80);
+            let cleanLeftText = removeAccents(card.leftText || '');
+            let splitLeftText = doc.splitTextToSize(cleanLeftText, 25);
+            doc.text(splitLeftText, x + 17, y + 4, { align: "center", baseline: "top" });
+
+            if (card.leftImg) {
+                try {
+                    const imgData = await toDataURL(card.leftImg);
+                    const imgSize = 20; 
+                    const imgX = x + (34 - imgSize) / 2; 
+                    const imgY = y + 12; 
+                    doc.addImage(imgData, 'PNG', imgX, imgY, imgSize, imgSize);
+                } catch (e) {
+                    console.error("Chyba obrázku:", e.message);
+                }
+            }
+
+            doc.setFontSize(10).setTextColor(0);
+            const cleanRightText = card.rightText || '';
+            const splitRightText = doc.splitTextToSize(cleanRightText, 26); 
+            doc.text(splitRightText, x + 51, y + (cardHeight / 2), { align: "center", baseline: "middle" });
+        }
+
+        doc.save(`domino-${currentTitle.toLowerCase()}.pdf`);
+    }
+</script>
+
+</body>
+</html>
