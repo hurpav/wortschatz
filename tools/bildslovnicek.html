@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor Obrázkového Slovníčku v7</title>
+    <title>Generátor Obrázkového Slovníčku v5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -86,16 +86,6 @@
             font-family: inherit;
         }
 
-        .range-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .range-group input {
-            text-align: center;
-        }
-
         .radio-group {
             display: flex;
             gap: 20px;
@@ -132,6 +122,7 @@
 
         .preview-box {
             grid-column: 1 / -1;
+            overflow-x: auto;
         }
 
         .preview-grid-container {
@@ -202,22 +193,6 @@
             text-overflow: ellipsis;
         }
 
-        .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: var(--primary-hover);
-        }
-
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -236,43 +211,35 @@
 <div class="container">
     <header>
         <h1>🖼️ Bildwörterbuch - Obrázkový slovníček</h1>
-        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s inteligentním procvičováním členů a filtrováním ID.</p>
+        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s dynamickým načítáním JSON konfigurací slovní zásoby.</p>
     </header>
 
     <div class="grid">
         <div class="card" style="grid-column: 1 / -1;">
-            <h2>1. Nastavení a rozsah tisku</h2>
-            <div class="grid" style="grid-template-columns: 2fr 1.5fr 2fr; gap: 20px;">
+            <h2>1. Nastavení a zdroj dat</h2>
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="form-group">
-                    <label for="themeSelect">Zvolit téma:</label>
+                    <label for="themeSelect">Zvolit téma ze seznamu (JSON repozitář):</label>
                     <select id="themeSelect" onchange="loadTheme()"></select>
-                </div>
-                <div class="form-group">
-                    <label>Rozsah ID slovíček:</label>
-                    <div class="range-group">
-                        <input type="number" id="idFrom" min="1" value="1" onchange="filterWords()">
-                        <span>až</span>
-                        <input type="number" id="idTo" min="1" value="10" onchange="filterWords()">
-                    </div>
                 </div>
                 <div class="form-group">
                     <label>Podoba slovníčku:</label>
                     <div class="radio-group">
                         <label class="radio-label">
                             <input type="radio" name="mode" value="portfolio" checked onchange="updatePreview()"> 
-                            📁 Portfolio (Komplet)
+                            📁 Tisk do portfolia (Komplet slovo)
                         </label>
                         <label class="radio-label">
                             <input type="radio" name="mode" value="practice" onchange="updatePreview()"> 
-                            ✏️ Procvičování (___ R_______k)
+                            ✏️ Procvičování (První písmeno + linka)
                         </label>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <label id="listLabel">Slovíčka vybraná k tisku:</label>
+                <label id="listLabel">Načtená slovíčka a cesty k obrázkům:</label>
                 <div id="wordsContainer" class="word-list">
-                    <span class="loading-text">Vyberte téma...</span>
+                    <span class="loading-text">Vyberte téma k načtení...</span>
                 </div>
             </div>
         </div>
@@ -285,7 +252,7 @@
         </div>
 
         <div class="card preview-box">
-            <h2>Živý náhled vybraného rozsahu ID</h2>
+            <h2>Živý náhled tisku (Mřížka se přizpůsobí struktuře JSONu)</h2>
             <div class="preview-grid-container">
                 <div class="preview-page" id="previewLeft">
                     <div class="preview-page-title">Žák 1 (A5)</div>
@@ -301,6 +268,7 @@
 </div>
 
 <script>
+    // SEZNAM TÉMAT - mapuje se na soubory ve složce ../data/[id].json
     const themes = [
         { id: "schulsachen", name: "Schulsachen (Pomůcky)" },
         { id: "familie", name: "Familie (Rodina)" },
@@ -312,9 +280,8 @@
         { id: "stundenplan", name: "Stundenplan / Monate" }
     ];
 
-    let allFetchedItems = []; 
-    let activeItems = [];     
-    let activeImages = [];    
+    let activeWords = [];
+    let activeImages = [];
 
     window.onload = function() {
         populateSelect();
@@ -332,30 +299,29 @@
         });
     }
 
+    // DYNAMICKÉ NAČÍTÁNÍ JSON DATASETU (Stejně jako u Domina)
     function loadTheme() {
         const key = document.getElementById('themeSelect').value;
         const container = document.getElementById('wordsContainer');
         container.innerHTML = '<span class="loading-text">Načítám data z repozitáře...</span>';
         
+        // Cesta odpovídá struktuře složek: ../data/nazev_tematu.json
         fetch(`../data/${key}.json`)
             .then(response => {
                 if (!response.ok) throw new Error('Soubor JSON nebyl nalezen');
                 return response.json();
             })
             .then(data => {
-                const firstKey = Object.keys(data)[0];
-                allFetchedItems = data[firstKey] || [];
-
-                if (allFetchedItems.length > 0) {
-                    const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
-                    const minId = ids.length ? Math.min(...ids) : 1;
-                    const maxId = ids.length ? Math.max(...ids) : 10;
-
-                    document.getElementById('idFrom').value = minId;
-                    document.getElementById('idTo').value = Math.min(minId + 8, maxId); 
+                // Přizpůsobení struktuře (předpokládáme pole objektů nebo pole slov)
+                if (Array.isArray(data)) {
+                    activeWords = data.map(item => typeof item === 'object' ? item.german : item);
+                    activeImages = data.map((item, index) => {
+                        if (typeof item === 'object' && item.image) return item.image;
+                        return `../images/${key}/${key}_${index}.png`;
+                    });
                 }
-
-                filterWords();
+                renderWordInputs();
+                updatePreview();
             })
             .catch(error => {
                 console.error(error);
@@ -363,46 +329,13 @@
             });
     }
 
-    function filterWords() {
-        const fromId = parseInt(document.getElementById('idFrom').value) || 1;
-        const toId = parseInt(document.getElementById('idTo').value) || 99;
-
-        const filtered = allFetchedItems.filter(item => {
-            const itemId = parseInt(item.id);
-            return itemId >= fromId && itemId <= toId;
-        });
-
-        activeItems = filtered; 
-
-        activeImages = filtered.map(item => {
-            if (item.image) {
-                return item.image.startsWith('images/') ? `../${item.image}` : item.image;
-            }
-            return `../images/unknown.png`;
-        });
-
-        renderWordInputs();
-        updatePreview();
-    }
-
     function renderWordInputs() {
         const container = document.getElementById('wordsContainer');
         container.innerHTML = '';
-        
-        if(activeItems.length === 0) {
-            container.innerHTML = '<span class="loading-text" style="color: #f59e0b;">⚠️ V tomto rozsahu ID nebyla nalezena žádná slovíčka.</span>';
-            return;
-        }
-
-        activeItems.forEach((item, index) => {
+        activeWords.forEach((word, index) => {
             const div = document.createElement('div');
             div.className = 'word-item';
             
-            const label = document.createElement('span');
-            label.textContent = `ID #${item.id || index+1}:`;
-            label.style.fontWeight = 'bold';
-            label.style.minWidth = '50px';
-
             const imgInput = document.createElement('input');
             imgInput.type = 'text';
             imgInput.value = activeImages[index];
@@ -414,36 +347,20 @@
 
             const input = document.createElement('input');
             input.type = 'text';
-            input.value = item.artikel ? `${item.artikel} ${item.de}` : item.de;
+            input.value = word;
             input.oninput = function() {
-                const parts = this.value.split(' ');
-                if (parts.length > 1 && ['der', 'die', 'das'].includes(parts[0].toLowerCase())) {
-                    activeItems[index].artikel = parts[0];
-                    activeItems[index].de = parts.slice(1).join(' ');
-                } else {
-                    activeItems[index].artikel = '';
-                    activeItems[index].de = this.value;
-                }
+                activeWords[index] = this.value;
                 updatePreview();
             };
             
-            div.appendChild(label);
             div.appendChild(imgInput);
             div.appendChild(input);
             container.appendChild(div);
         });
     }
 
-    function formatPracticeItem(item) {
-        if (item.artikel && item.de) {
-            let hiddenArtikel = "_ ".repeat(item.artikel.length).trim();
-            let word = item.de;
-            let hiddenWord = word[0] + word.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
-            return `${hiddenArtikel}   ${hiddenWord}`; 
-        } 
-        
-        let fullWord = item.de || "";
-        return fullWord.split(' ').map(part => {
+    function formatPracticeWord(word) {
+        return word.split(' ').map(part => {
             if (part.length <= 1) return part;
             let first = part[0];
             let rest = part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
@@ -453,7 +370,7 @@
 
     function updatePreview() {
         const selectEl = document.getElementById('themeSelect');
-        if (!selectEl.options.length || activeItems.length === 0) return;
+        if (!selectEl.options.length || activeWords.length === 0) return;
         
         const titleText = selectEl.options[selectEl.selectedIndex].text;
         const mode = document.querySelector('input[name="mode"]:checked').value;
@@ -462,7 +379,7 @@
             const grid = document.getElementById(gridId);
             grid.innerHTML = '';
             
-            activeItems.forEach((item, idx) => {
+            activeWords.forEach((word, idx) => {
                 const box = document.createElement('div');
                 box.className = 'vocab-box';
                 
@@ -481,12 +398,7 @@
                 
                 const wordDiv = document.createElement('div');
                 wordDiv.className = 'vocab-word';
-                
-                if (mode === 'portfolio') {
-                    wordDiv.textContent = item.artikel ? `${item.artikel} ${item.de}` : item.de;
-                } else {
-                    wordDiv.textContent = formatPracticeItem(item);
-                }
+                wordDiv.textContent = (mode === 'portfolio') ? word : formatPracticeWord(word);
                 
                 box.appendChild(imgPlace);
                 box.appendChild(wordDiv);
@@ -528,6 +440,87 @@
         function drawHalf(offsetX) {
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(14);
-            doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
+            doc.text("BILDWÖRTERBUCH (Obrázkový slovníček)", offsetX + 10, 15);
             
             doc.setFont("Helvetica", "italic");
+            doc.setFontSize(10);
+            doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
+            
+            const startX = offsetX + 10;
+            const startY = 28;
+            const cols = 3;
+            const boxWidth = 41;
+            const boxHeight = 28;
+            const gap = 4;
+            
+            activeWords.forEach((word, idx) => {
+                const r = Math.floor(idx / cols);
+                const c = idx % cols;
+                
+                const x = startX + (c * (boxWidth + gap));
+                const y = startY + (r * (boxHeight + gap));
+                
+                doc.setLineWidth(0.3);
+                doc.setDrawColor(0);
+                doc.rect(x, y, boxWidth, boxHeight);
+                
+                doc.setLineWidth(0.1);
+                doc.setDrawColor(180);
+                doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
+                
+                const img = loadedImages[idx];
+                if (img) {
+                    const maxW = boxWidth - 4;
+                    const maxH = boxHeight - 11;
+                    let imgW = maxW;
+                    let imgH = (img.height / img.width) * imgW;
+                    
+                    if (imgH > maxH) {
+                        imgH = maxH;
+                        imgW = (img.width / img.height) * imgH;
+                    }
+                    
+                    const imgX = x + 1.5 + (maxW - imgW) / 2;
+                    const imgY = y + 1.5 + (maxH - imgH) / 2;
+                    
+                    try {
+                        doc.addImage(img, 'PNG', imgX, imgY, imgW, imgH);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                } else {
+                    doc.setFont("Helvetica", "normal");
+                    doc.setFontSize(7);
+                    doc.text("Bild fehlt", x + 14, y + 10);
+                }
+
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9.5);
+                
+                let displayText = (mode === 'portfolio') ? word : formatPracticeWord(word);
+                const textWidth = doc.getTextWidth(displayText);
+                const textX = x + (boxWidth - textWidth) / 2;
+                doc.text(displayText, textX, y + boxHeight - 2.5);
+            });
+            
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text("Name: ______________________", offsetX + 10, 195);
+            doc.text("Klasse: _________", offsetX + halfWidth - 35, 195);
+        }
+
+        drawHalf(0);
+        
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(120);
+        doc.setLineDashPattern([2, 2], 0);
+        doc.line(halfWidth, 0, halfWidth, 210);
+        doc.setLineDashPattern([], 0);
+        
+        drawHalf(halfWidth);
+
+        doc.save(`obrazkovy-slovnicek-${mode}.pdf`);
+    }
+</script>
+</body>
+</html>
