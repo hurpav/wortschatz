@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Generátor Výukových Pomůcek (Schulsachen)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 30px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .config-box {
+            background-color: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-domino { background-color: #2ecc71; }
+        .btn-domino:hover { background-color: #27ae60; }
+        .btn-vocab { background-color: #3498db; }
+        .btn-vocab:hover { background-color: #2980b9; }
+        .btn-blooket { background-color: #9b59b6; }
+        .btn-blooket:hover { background-color: #8e44ad; }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; display: block; }
+        .error { background-color: #f8d7da; color: #721c24; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Správce Výukových Materiálů</h1>
+    <p>Tato aplikace načítá 18 slovíček a obrázků Schulsachen přímo z vašeho GitHubu a generuje materiály.</p>
+
+    <div class="config-box">
+        <label for="githubUrl">Zadejte vaši GitHub RAW URL adresu pro 'daten.json':</label>
+        <input type="text" id="githubUrl" placeholder="https://raw.githubusercontent.com/UZIVATEL/REPO/main/daten.json">
+        <button onclick="loadDatabase()" style="background-color: #34495e;">Načíst data z GitHubu</button>
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <h2>Dostupné Akce a Generátory</h2>
+    <div class="btn-grid">
+        <button class="btn-domino" onclick="generateDominoPDF()">1) Generovat Obrázkové Domino</button>
+        <button class="btn-vocab" onclick="generateVocabPDF()">2) Generovat Obrázkový Slovníček</button>
+        <button class="btn-blooket" onclick="exportBlooketCSV()">3) Exportovat CSV pro Blooket</button>
+    </div>
+</div>
+
+<script>
+    const { jsPDF } = window.jspdf;
+    let masterData = null;
+    let baseImgUrl = "";
+
+    // Funkce pro načtení dat z GitHubu
+    async function loadDatabase() {
+        const url = document.getElementById('githubUrl').value.trim();
+        const status = document.getElementById('statusMessage');
+        
+        if(!url) {
+            status.textContent = "Prosím, vložte platnou URL adresu.";
+            status.className = "status error";
+            return;
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Nepodařilo se stáhnout soubor.');
+            masterData = await response.json();
+            
+            // Získání základní URL pro složku s obrázky (odřízneme název souboru daten.json)
+            baseImgUrl = url.substring(0, url.lastIndexOf('/')) + '/';
+
+            status.textContent = `Úspěšně načteno ${masterData.Schulsachen.length} slovíček z GitHubu!`;
+            status.className = "status success";
+        } catch (error) {
+            status.textContent = "Chyba při načítání dat. Zkontrolujte URL a zda máte zapnutý veřejný repozitář.";
+            status.className = "status error";
+            console.error(error);
+        }
+    }
+
+    // Pomocná funkce pro převod obrázku z URL na Base64 (pro jsPDF)
+    function toDataURL(url) {
+        return new Promise((resolve, reject) => {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                    resolve(reader.result);
+                }
+                reader.readAsDataURL(xhr.response);
+            };
+            xhr.onerror = function() {
+                reject(new Error('Chyba při stahování obrázku z GitHubu: ' + url));
+            };
+            xhr.open('GET', url);
+            xhr.responseType = 'blob';
+            xhr.send();
+        });
+    }
+
+    // 1) GENERÁTOR DOMINA
+    async function generateDominoPDF() {
+        if(!masterData) { alert('Nejprve načtěte data z GitHubu!'); return; }
+        
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        doc.setFont("Helvetica", "bold");
+        doc.text("DOMINO: SCHULSACHEN", 15, 15);
+        
+        let items = [...masterData.Schulsachen];
+        
+        // Vytvoření řetězce domina (pár: Německý výraz -> Obrázek dalšího)
+        let cards = [];
+        for(let i = 0; i < items.length; i++) {
+            let nextIndex = (i + 1) % items.length;
+            cards.push({
+                text: items[i].de,
+                imgUrl: baseImgUrl + items[nextIndex].image
+            });
+        }
+
+        // Kreslení kartiček (Grid 2 sloupce, 4 řady na stránku)
+        let x = 15;
+        let y = 25;
+        const w = 85;
+        const h = 40;
+
+        for(let i = 0; i < cards.length; i++) {
+            if(i > 0 && i % 8 === 0) {
+                doc.addPage();
+                y = 25;
+            }
+            
+            let col = i % 2;
+            let row = Math.floor((i % 8) / 2);
+            let currentX = x + (col * 95);
+            let currentY = y + (row * 50);
+
+            // Obrys karty
+            doc.setDrawColor(0);
+            doc.setLineWidth(0.5);
+            doc.rect(currentX, currentY, w, h);
+            // Středová čára
+            doc.line(currentX + (w/2), currentY, currentX + (w/2), currentY + h);
+
+            // Levá strana: Text
+            doc.setFontSize(11);
+            doc.setFont("Helvetica", "bold");
+            doc.text(cards[i].text, currentX + 5, currentY + (h/2) + 2, { maxWidth: w/2 - 8 });
+
+            // Pravá strana: Obrázek z GitHubu
+            try {
+                let base64Img = await toDataURL(cards[i].imgUrl);
+                doc.addImage(base64Img, 'JPEG', currentX + (w/2) + 5, currentY + 5, w/2 - 10, h - 10);
+            } catch(e) {
+                doc.setFontSize(8);
+                doc.text("[Obrázek chybí]", currentX + (w/2) + 10, currentY + (h/2));
+            }
+        }
+
+        doc.save("domino_schulsachen.pdf");
+    }
+
+    // 2) GENERÁTOR OBRÁZKOVÉHO SLOVNÍČKU
+    async function generateVocabPDF() {
+        if(!masterData) { alert('Nejprve načtěte data z GitHubu!'); return; }
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text("BILDWÖRTERBUCH - SCHULSACHEN", 15, 18);
+
+        // Mřížka 3 sloupce x 6 řad = 18 slovíček přesně na jednu A4
+        const cols = 3;
+        const rows = 6;
+        const startX = 15;
+        const startY = 28;
+        const cardW = 55;
+        const cardH = 40;
+        const gapX = 8;
+        const gapY = 4;
+
+        let index = 0;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if(index >= masterData.Schulsachen.length) break;
+                
+                let item = masterData.Schulsachen[index];
+                let x = startX + c * (cardW + gapX);
+                let y = startY + r * (cardH + gapY);
+
+                // Boxík pro slovíčko
+                doc.setDrawColor(200);
+                doc.setLineWidth(0.2);
+                doc.rect(x, y, cardW, cardH);
+
+                // Načtení a vložení obrázku slovíčka
+                try {
+                    let fullImgUrl = baseImgUrl + item.image;
+                    let base64Img = await toDataURL(fullImgUrl);
+                    doc.addImage(base64Img, 'JPEG', x + 10, y + 3, cardW - 20, cardH - 16);
+                } catch(e) {
+                    doc.setFontSize(8);
+                    doc.text("[Obrázek]", x + cardW/2, y + 12, {align: "center"});
+                }
+
+                // Německý název se členem
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(10);
+                doc.setTextColor(44, 62, 80);
+                doc.text(item.de, x + cardW/2, y + cardH - 8, { align: "center" });
+
+                // Český překlad
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(9);
+                doc.setTextColor(127, 140, 141);
+                doc.text(item.cz, x + cardW/2, y + cardH - 3, { align: "center" });
+
+                index++;
+            }
+        }
+
+        doc.save("obrazkovy_slovnicek_schulsachen.pdf");
+    }
+
+    // 3) EXPORT PRO BLOOKET
+    function exportBlooketCSV() {
+        if(!masterData) { alert('Nejprve načtěte data z GitHubu!'); return; }
+
+        // Hlavička požadovaná importem Blooket
+        let csvContent = "Question,Answer 1,Answer 2,Answer 3,Answer 4,Time Limit (sec),Correct Answer\n";
+
+        masterData.Schulsachen.forEach(item => {
+            let q = item.blooket;
+            // Ošetření uvozovek pro CSV formát
+            let row = `"${q.question}","${q.answers[0]}","${q.answers[1]}","${q.answers[2]}","${q.answers[3]}",${q.time_limit},"${q.correct_answer}"`;
+            csvContent += row + "\n";
+        });
+
+        // Stažení souboru v kódování UTF-8 s BOM (aby Excel správně zobrazil češtinu)
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "blooket_import_schulsachen.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>

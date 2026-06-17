@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Domino Generátor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../assets/data.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f4f8; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎲 Domino Generátor</h1>
+    <select id="themeSelect">
+        <option value="schulsachen.json">Schulsachen</option>
+        <option value="berufe.json">Berufe</option>
+    </select>
+    <button onclick="generatePDF()">🖨️ Vygenerovat PDF (16 karet)</button>
+</div>
+
+<script>
+    // Pomocná funkce pro převod obrázku na base64
+    function toDataURL(url) {
+        return new Promise((resolve, reject) => {
+            let finalUrl = url.startsWith('http') ? url : `https://raw.githubusercontent.com/hurpav/wortschatz/main/${url}`;
+            const img = new Image();
+            img.crossOrigin = 'Anonymous'; 
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = () => reject(new Error("Nelze načíst: " + finalUrl));
+            img.src = finalUrl + '?_ts=' + new Date().getTime();
+        });
+    }
+
+    async function generatePDF() {
+        const filename = document.getElementById("themeSelect").value;
+        const loadedWords = await loadData(filename); // Používá tvůj nový assets/data.js
+        
+        if (loadedWords.length < 8) {
+            alert("Potřebujete alespoň 8 slovíček!");
+            return;
+        }
+
+        const removeAccents = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+        doc.setFont("Helvetica", "normal");
+
+        let dominoCards = [];
+        for (let i = 0; i < 16; i++) {
+            let currentIdx = i % loadedWords.length;
+            let prevIdx = (i === 0) ? (loadedWords.length - 1) : ((i - 1) % loadedWords.length);
+            dominoCards.push({ leftText: loadedWords[prevIdx].cz, leftImg: loadedWords[prevIdx].image, rightText: loadedWords[currentIdx].de });
+        }
+
+        const cardWidth = 68, cardHeight = 35, startX = 14, startY = 25, gapX = 3, gapY = 5;
+
+        for (let index = 0; index < dominoCards.length; index++) {
+            if (index === 8) doc.addPage();
+
+            let card = dominoCards[index];
+            let cardOnPage = index % 8;
+            let x = startX + (cardOnPage % 4) * (cardWidth + gapX);
+            let y = startY + Math.floor(cardOnPage / 4) * (cardHeight + gapY);
+
+            doc.setDrawColor(0).rect(x, y, cardWidth, cardHeight);
+            doc.line(x + cardWidth / 2, y, x + cardWidth / 2, y + cardHeight);
+
+            doc.setFontSize(9);
+            doc.text(doc.splitTextToSize(removeAccents(card.leftText || ''), 25), x + 17, y + 4, { align: "center" });
+
+            if (card.leftImg) {
+                try {
+                    const imgData = await toDataURL(card.leftImg);
+                    doc.addImage(imgData, 'PNG', x + 7, y + 12, 20, 20);
+                } catch (e) { console.error(e); }
+            }
+
+            doc.setFontSize(10);
+            doc.text(doc.splitTextToSize(card.rightText || '', 26), x + 51, y + (cardHeight / 2), { align: "center" });
+        }
+        doc.save(`domino-16karet.pdf`);
+    }
+</script>
+</body>
+</html>
