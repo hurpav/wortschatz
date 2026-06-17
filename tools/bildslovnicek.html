@@ -226,3 +226,308 @@
         
         .loading-text {
             color: #0f766e;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🖼️ Bildwörterbuch - Obrázkový slovníček</h1>
+        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s inteligentním procvičováním členů a filtrováním ID.</p>
+    </header>
+
+    <div class="grid">
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>1. Nastavení a rozsah tisku</h2>
+            <div class="grid" style="grid-template-columns: 2fr 1.5fr 2fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="themeSelect">Zvolit téma:</label>
+                    <select id="themeSelect" onchange="loadTheme()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Rozsah ID slovíček:</label>
+                    <div class="range-group">
+                        <input type="number" id="idFrom" min="1" value="1" onchange="filterWords()">
+                        <span>až</span>
+                        <input type="number" id="idTo" min="1" value="10" onchange="filterWords()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Podoba slovníčku:</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="mode" value="portfolio" checked onchange="updatePreview()"> 
+                            📁 Portfolio (Komplet)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="mode" value="practice" onchange="updatePreview()"> 
+                            ✏️ Procvičování (___ R_______k)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label id="listLabel">Slovíčka vybraná k tisku:</label>
+                <div id="wordsContainer" class="word-list">
+                    <span class="loading-text">Vyberte téma...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn" style="flex: 3;" onclick="generatePDF()">Vygenerovat PDF (A4 na šířku -> 2x A5)</button>
+            <a href="../index.html" style="flex: 1; text-decoration: none;">
+                <button class="btn" type="button" style="background: #64748b; width: 100%;">🏠 Dashboard</button>
+            </a>
+        </div>
+
+        <div class="card preview-box">
+            <h2>Živý náhled vybraného rozsahu ID</h2>
+            <div class="preview-grid-container">
+                <div class="preview-page" id="previewLeft">
+                    <div class="preview-page-title">Žák 1 (A5)</div>
+                    <div class="vocab-grid" id="gridLeft"></div>
+                </div>
+                <div class="preview-page" id="previewRight">
+                    <div class="preview-page-title">Žák 2 (A5)</div>
+                    <div class="vocab-grid" id="gridRight"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const themes = [
+        { id: "schulsachen", name: "Schulsachen (Pomůcky)" },
+        { id: "familie", name: "Familie (Rodina)" },
+        { id: "berufe", name: "Berufe (Povolání)" },
+        { id: "hobbys", name: "Hobbys (Záliby)" },
+        { id: "sport", name: "Sportarten (Sporty)" },
+        { id: "wochentage", name: "Wochentage (Dny v týdnu)" },
+        { id: "essen", name: "Essen (Jídlo)" },
+        { id: "stundenplan", name: "Stundenplan / Monate" }
+    ];
+
+    let allFetchedItems = []; 
+    let activeItems = [];     
+    let activeImages = [];    
+
+    window.onload = function() {
+        populateSelect();
+        loadTheme();
+    };
+
+    function populateSelect() {
+        const select = document.getElementById('themeSelect');
+        select.innerHTML = '';
+        themes.forEach(theme => {
+            let opt = document.createElement('option');
+            opt.value = theme.id;
+            opt.textContent = theme.name;
+            select.appendChild(opt);
+        });
+    }
+
+    function loadTheme() {
+        const key = document.getElementById('themeSelect').value;
+        const container = document.getElementById('wordsContainer');
+        container.innerHTML = '<span class="loading-text">Načítám data z repozitáře...</span>';
+        
+        fetch(`../data/${key}.json`)
+            .then(response => {
+                if (!response.ok) throw new Error('Soubor JSON nebyl nalezen');
+                return response.json();
+            })
+            .then(data => {
+                const firstKey = Object.keys(data)[0];
+                allFetchedItems = data[firstKey] || [];
+
+                if (allFetchedItems.length > 0) {
+                    const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
+                    const minId = ids.length ? Math.min(...ids) : 1;
+                    const maxId = ids.length ? Math.max(...ids) : 10;
+
+                    document.getElementById('idFrom').value = minId;
+                    document.getElementById('idTo').value = Math.min(minId + 8, maxId); 
+                }
+
+                filterWords();
+            })
+            .catch(error => {
+                console.error(error);
+                container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Nepodařilo se načíst data pro: ../data/${key}.json</span>`;
+            });
+    }
+
+    function filterWords() {
+        const fromId = parseInt(document.getElementById('idFrom').value) || 1;
+        const toId = parseInt(document.getElementById('idTo').value) || 99;
+
+        const filtered = allFetchedItems.filter(item => {
+            const itemId = parseInt(item.id);
+            return itemId >= fromId && itemId <= toId;
+        });
+
+        activeItems = filtered; 
+
+        activeImages = filtered.map(item => {
+            if (item.image) {
+                return item.image.startsWith('images/') ? `../${item.image}` : item.image;
+            }
+            return `../images/unknown.png`;
+        });
+
+        renderWordInputs();
+        updatePreview();
+    }
+
+    function renderWordInputs() {
+        const container = document.getElementById('wordsContainer');
+        container.innerHTML = '';
+        
+        if(activeItems.length === 0) {
+            container.innerHTML = '<span class="loading-text" style="color: #f59e0b;">⚠️ V tomto rozsahu ID nebyla nalezena žádná slovíčka.</span>';
+            return;
+        }
+
+        activeItems.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'word-item';
+            
+            const label = document.createElement('span');
+            label.textContent = `ID #${item.id || index+1}:`;
+            label.style.fontWeight = 'bold';
+            label.style.minWidth = '50px';
+
+            const imgInput = document.createElement('input');
+            imgInput.type = 'text';
+            imgInput.value = activeImages[index];
+            imgInput.style.width = '240px';
+            imgInput.oninput = function() {
+                activeImages[index] = this.value;
+                updatePreview();
+            };
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = item.artikel ? `${item.artikel} ${item.de}` : item.de;
+            input.oninput = function() {
+                const parts = this.value.split(' ');
+                if (parts.length > 1 && ['der', 'die', 'das'].includes(parts[0].toLowerCase())) {
+                    activeItems[index].artikel = parts[0];
+                    activeItems[index].de = parts.slice(1).join(' ');
+                } else {
+                    activeItems[index].artikel = '';
+                    activeItems[index].de = this.value;
+                }
+                updatePreview();
+            };
+            
+            div.appendChild(label);
+            div.appendChild(imgInput);
+            div.appendChild(input);
+            container.appendChild(div);
+        });
+    }
+
+    function formatPracticeItem(item) {
+        if (item.artikel && item.de) {
+            let hiddenArtikel = "_ ".repeat(item.artikel.length).trim();
+            let word = item.de;
+            let hiddenWord = word[0] + word.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
+            return `${hiddenArtikel}   ${hiddenWord}`; 
+        } 
+        
+        let fullWord = item.de || "";
+        return fullWord.split(' ').map(part => {
+            if (part.length <= 1) return part;
+            let first = part[0];
+            let rest = part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
+            return first + rest;
+        }).join(' ');
+    }
+
+    function updatePreview() {
+        const selectEl = document.getElementById('themeSelect');
+        if (!selectEl.options.length || activeItems.length === 0) return;
+        
+        const titleText = selectEl.options[selectEl.selectedIndex].text;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+
+        function fillGrid(gridId) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = '';
+            
+            activeItems.forEach((item, idx) => {
+                const box = document.createElement('div');
+                box.className = 'vocab-box';
+                
+                const imgPlace = document.createElement('div');
+                imgPlace.className = 'vocab-image-place';
+                
+                const imgEl = document.createElement('img');
+                imgEl.src = activeImages[idx];
+                imgEl.onerror = function() {
+                    this.style.display = 'none';
+                    imgPlace.textContent = '🖼️ Chybí';
+                    imgPlace.style.fontSize = '0.7rem';
+                    imgPlace.style.color = '#94a3b8';
+                };
+                imgPlace.appendChild(imgEl);
+                
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'vocab-word';
+                
+                if (mode === 'portfolio') {
+                    wordDiv.textContent = item.artikel ? `${item.artikel} ${item.de}` : item.de;
+                } else {
+                    wordDiv.textContent = formatPracticeItem(item);
+                }
+                
+                box.appendChild(imgPlace);
+                box.appendChild(wordDiv);
+                grid.appendChild(box);
+            });
+        }
+
+        fillGrid('gridLeft');
+        fillGrid('gridRight');
+        
+        document.getElementById('previewLeft').querySelector('.preview-page-title').textContent = `Žák 1 (A5) - ${titleText}`;
+        document.getElementById('previewRight').querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
+    }
+
+    function loadImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+        });
+    }
+
+    async function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        
+        const selectEl = document.getElementById('themeSelect');
+        const titleText = selectEl.options[selectEl.selectedIndex].text;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const halfWidth = 297 / 2;
+
+        const loadedImages = [];
+        for (let i = 0; i < activeImages.length; i++) {
+            const img = await loadImage(activeImages[i]);
+            loadedImages.push(img);
+        }
+
+        function drawHalf(offsetX) {
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
+            
+            doc.setFont("Helvetica", "italic");
