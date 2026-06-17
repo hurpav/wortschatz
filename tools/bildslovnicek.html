@@ -2,223 +2,62 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor Obrázkového Slovníčku v7</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>Diagnostika Slovníčku</title>
     <style>
-        :root {
-            --primary: #0f766e;
-            --primary-hover: #115e59;
-            --bg: #f0fdfa;
-            --card: #ffffff;
-            --text: #1e293b;
-            --border: #cbd5e1;
-        }
+        body { font-family: sans-serif; padding: 20px; background: #f0fdfa; }
+        .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; max-width: 600px; margin: 0 auto; }
+        h1 { color: #0f766e; font-size: 1.2rem; }
+        pre { background: #f1f5f9; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .err { color: #ef4444; font-weight: bold; }
+        .ok { color: #10b981; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-        }
+<div class="box">
+    <h2>🔍 Diagnostika načítání JSON dat</h2>
+    <p>Tato stránka zkouší přímo sáhnout pro soubor <code style="background: #e2e8f0; padding: 2px 4px;">../data/schulsachen.json</code>.</p>
+    
+    <div id="status">🔄 Pokus o stažení souboru...</div>
+    
+    <h3>Výpis z konzole / Obsah souboru:</h3>
+    <pre id="output">Zatím žádná data...</pre>
+</div>
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const statusEl = document.getElementById('status');
+        const outputEl = document.getElementById('output');
+        
+        const url = '../data/schulsachen.json';
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server odpověděl kódem ${response.status} (${response.statusText})`);
+                }
+                return response.text(); // Načteme nejdřív jako text, abychom viděli i rozbitý JSON
+            })
+            .then(text => {
+                statusEl.innerHTML = '<span class="ok">✅ Soubor byl úspěšně stažen!</span>';
+                outputEl.textContent = text;
+                
+                // Zkusíme, jestli je to validní JSON
+                try {
+                    const parsed = JSON.parse(text);
+                    outputEl.textContent += "\n\n--- Analýza struktury ---\n";
+                    outputEl.textContent += "JSON je validní.\n";
+                    outputEl.textContent += "Dostupné klíče: " + Object.keys(parsed).join(', ');
+                } catch(e) {
+                    outputEl.textContent += "\n\n⚠️ POZOR: Stažený text není validní JSON soubor! Chyba: " + e.message;
+                }
+            })
+            .catch(error => {
+                statusEl.innerHTML = '<span class="err">❌ Stažení selhalo!</span>';
+                outputEl.textContent = `Chyba při fetchi:\n${error.message}\n\nMožné příčiny:\n1. Soubor na adrese "${url}" neexistuje.\n2. GitHub Pages ještě nepropisoval změny (zkus Ctrl+F5).\n3. Velká/malá písmena v názvu složky "data" nebo souboru.`;
+            });
+    });
+</script>
 
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            color: var(--primary);
-            margin-bottom: 5px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
-        }
-
-        .card {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid var(--border);
-        }
-
-        h2 {
-            font-size: 1.2rem;
-            margin-top: 0;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 5px;
-            color: var(--primary);
-        }
-
-        .settings-bar {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 2fr;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
-
-        @media (max-width: 600px) {
-            .settings-bar { grid-template-columns: 1fr; }
-        }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-
-        select, input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-family: inherit;
-        }
-
-        .range-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .range-group input {
-            text-align: center;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 20px;
-            margin-top: 5px;
-        }
-
-        .radio-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: normal;
-            cursor: pointer;
-        }
-
-        .word-list {
-            max-height: 250px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 4px;
-            background: #f8fafc;
-            margin-top: 5px;
-        }
-
-        .word-item {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-
-        .word-item input {
-            padding: 5px;
-        }
-
-        .preview-box {
-            grid-column: 1 / -1;
-        }
-
-        .preview-grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            background: #cbd5e1;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .preview-page {
-            background: white;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-height: 350px;
-        }
-
-        .preview-page-title {
-            font-size: 0.9rem;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-            border-bottom: 1px dashed #94a3b8;
-            padding-bottom: 5px;
-        }
-
-        .vocab-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .vocab-box {
-            border: 1px solid #475569;
-            height: 95px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 5px;
-            background: #fafafa;
-            border-radius: 4px;
-        }
-
-        .vocab-image-place {
-            flex-grow: 1;
-            border: 1px dashed #cbd5e1;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
-            overflow: hidden;
-        }
-
-        .vocab-image-place img {
-            max-height: 45px;
-            max-width: 100%;
-            object-fit: contain;
-        }
-
-        .vocab-word {
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius:
+</body>
+</html>
