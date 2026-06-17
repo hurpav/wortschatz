@@ -198,7 +198,6 @@
         const key = selectEl.value;
         const titleText = selectEl.options[selectEl.selectedIndex].text;
         
-        // Dynamická úprava hlavního nadpisu
         document.getElementById('mainTitle').textContent = `📝 Wortschatz - ${titleText.split(' ')[0]}`;
 
         const container = document.getElementById('tableContainer');
@@ -213,7 +212,7 @@
         try {
             let response = await fetch(primaryUrl);
             if (!response.ok) response = await fetch(backupUrl);
-            if (!response.ok) throw new Error("Soubor s daty nebyl nalezen.");
+            if (!response.ok) throw new Error("Soubor s daty nebyl znalezen.");
 
             const data = await response.json();
             let rawData = data[key] || data.words || data;
@@ -249,12 +248,9 @@
 
         currentWords.forEach(item => {
             const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
-            const czWord = item.cs || "";
+            const czWord = item.cz || ""; // OPRAVENO: z cs na cz
             
-            // Příprava pro Wordwall (odděleno tabulátorem)
             textLines.push(`${deWord}\t${czWord}`);
-            
-            // Příprava tabulky
             tableHtml += `<tr><td><strong>${deWord}</strong></td><td>${czWord}</td></tr>`;
         });
 
@@ -273,31 +269,67 @@
         alert("Slovíčka byla zkopírována do schránky! Můžeš je vložit do Wordwallu.");
     }
 
+    // Pomocná funkce pro zamíchání pole (Fisher-Yates)
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
     function exportToBlooketCSV() {
         if (currentWords.length === 0) return;
 
-        // Hlavička Blooket šablony: Question, Answer, Alternates..., Time Limit
-        let csvContent = "data:text/csv;charset=utf-8,Question,Answer,Time Limit\n";
+        // Všechny dostupné české překlady pro generování falešných odpovědí
+        const allCzAnswers = currentWords.map(item => item.cz || "").filter(txt => txt !== "");
+
+        // Hlavička Blooket šablony pro Multiple Choice
+        let csvLines = ["Question,Answer,Choice 1,Choice 2,Choice 3,Choice 4,Time Limit"];
         
         currentWords.forEach(item => {
             const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
-            const czWord = item.cs || "";
+            const correctCz = item.cz || "";
             
-            // Ošetření uvozovek v CSV
-            const q = `"${deWord.replace(/"/g, '""')}"`;
-            const a = `"${czWord.replace(/"/g, '""')}"`;
+            // Vyfiltrujeme ostatní slovíčka kromě toho správného
+            let wrongChoices = allCzAnswers.filter(ans => ans !== correctCz);
+            // Zamícháme je a vezmeme první 3 jako distraktory
+            shuffle(wrongChoices);
             
-            // Výchozí časový limit 20 sekund pro Blooket otázečku
-            csvContent += `${q},${a},20\n`;
+            let choice1 = wrongChoices[0] || "";
+            let choice2 = wrongChoices[1] || "";
+            let choice3 = wrongChoices[2] || "";
+            let choice4 = ""; // Čtvrtou možnost můžeme nechat prázdnou, nebo pokud je dost slovíček, dosadit další
+            if (wrongChoices.length > 3) {
+                choice4 = wrongChoices[3];
+            }
+
+            // Ošetření uvozovek pro bezpečné CSV
+            const escapeCsv = (str) => `"${str.replace(/"/g, '""')}"`;
+
+            const q = escapeCsv(deWord);
+            const a = escapeCsv(correctCz);
+            const c1 = escapeCsv(choice1);
+            const c2 = escapeCsv(choice2);
+            const c3 = escapeCsv(choice3);
+            const c4 = escapeCsv(choice4);
+            const timeLimit = "20";
+
+            csvLines.push(`${q},${a},${c1},${c2},${c3},${c4},${timeLimit}`);
         });
 
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
+        // Spojení řádků s BOM pro správné kódování češtiny v Excelu/Blooketu
+        const csvContent = "\uFEFF" + csvLines.join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         
         const selectEl = document.getElementById('themeSelect');
         const key = selectEl ? selectEl.value : 'slovnicek';
         
-        link.setAttribute("href", encodedUri);
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
         link.setAttribute("download", `blooket-${key}.csv`);
         document.body.appendChild(link);
         
