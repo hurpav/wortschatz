@@ -1,1 +1,527 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generátor Obrázkového Slovníčku v3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #0f766e;
+            --primary-hover: #115e59;
+            --bg: #f0fdfa;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .word-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 4px;
+            background: #f8fafc;
+        }
+
+        .word-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .word-item input {
+            padding: 5px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .preview-box {
+            grid-column: 1 / -1;
+            overflow-x: auto;
+        }
+
+        .preview-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: #cbd5e1;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .preview-page {
+            background: white;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 350px;
+        }
+
+        .preview-page-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #94a3b8;
+            padding-bottom: 5px;
+        }
+
+        .vocab-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .vocab-box {
+            border: 1px solid #475569;
+            height: 95px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+
+        .vocab-image-place {
+            flex-grow: 1;
+            border: 1px dashed #cbd5e1;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            overflow: hidden;
+        }
+
+        .vocab-image-place img {
+            max-height: 45px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .vocab-word {
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🖼️ Bildwörterbuch - Obrázkový slovníček</h1>
+        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s načítáním obrázků z lokálního adresáře <code>images/</code>.</p>
+    </header>
+
+    <div class="grid">
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>1. Nastavení výstupu</h2>
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="themeSelect">Zvolit téma z databanky:</label>
+                    <select id="themeSelect" onchange="loadTheme()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Podoba slovníčku:</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="mode" value="portfolio" checked onchange="updatePreview()"> 
+                            📁 Tisk do portfolia (Komplet slovo)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="mode" value="practice" onchange="updatePreview()"> 
+                            ✏️ Procvičování (První písmeno + linka)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Slovíčka a cesty k obrázkům (relativně k souboru html):</label>
+                <div id="wordsContainer" class="word-list"></div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn" style="flex: 3;" onclick="generatePDF()">Vygenerovat PDF (A4 na šířku -> 2x A5)</button>
+            <a href="../index.html" style="flex: 1; text-decoration: none;">
+                <button class="btn" type="button" style="background: #64748b; width: 100%;">🏠 Dashboard</button>
+            </a>
+        </div>
+
+        <div class="card preview-box">
+            <h2>Živý náhled tisku (A4 rozdělená na 2x A5)</h2>
+            <div class="preview-grid-container">
+                <div class="preview-page" id="previewLeft">
+                    <div class="preview-page-title">Žák 1 (A5)</div>
+                    <div class="vocab-grid" id="gridLeft"></div>
+                </div>
+                <div class="preview-page" id="previewRight">
+                    <div class="preview-page-title">Žák 2 (A5)</div>
+                    <div class="vocab-grid" id="gridRight"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // VNITŘNÍ DATABANKA SLOVÍČEK
+    const dataset = {
+        familie: { name: "Familie (Rodina)", words: ["mein Vater", "meine Mutter", "mein Bruder", "meine Schwester", "mein Opa", "meine Oma"] },
+        berufe: { name: "Berufe (Povolání)", words: ["Lehrer / in", "Arzt / Ärztin", "Koch / Köchin", "Polizist / in", "Verkäufer / in", "Programmierer"] },
+        hobbys: { name: "Hobbys (Záliby)", words: ["Lesen", "Musik hören", "Zocken", "Kochen", "Reisen", "Malen"] },
+        sport: { name: "Sportarten (Sporty)", words: ["Fussball", "Tennis", "Schwimmen", "Basketball", "Volleyball", "Radfahren"] },
+        wochentage: { name: "Wochentage (Dny v týdnu)", words: ["am Montag", "am Dienstag", "am Mittwoch", "am Donnerstag", "am Freitag", "am Samstag"] },
+        hastdu: { name: "Fráze: hast du...", words: ["Zeit?", "Geld?", "Hunger?", "ein Auto?", "ein Fahrrad?", "Geschwister?"] },
+        isstdugerne: { name: "Fráze: isst du gerne...", words: ["Pizza?", "Sushi?", "Salat?", "Fleisch?", "Gemüse?", "Obst?"] },
+        essen: { name: "Essen (Jídlo)", words: ["das Brot", "die Butter", "der Käse", "der Apfel", "die Banane", "das Ei"] },
+        schulsachen: { name: "Schulsachen (Pomůcky)", words: ["der Block", "der Kuli", "das Buch", "die Schere", "der Bleistift", "das Mäppchen"] },
+        stundenplan: { name: "Stundenplan / Monate", words: ["Deutsch", "Mathe", "Englisch", "Sport", "Kunst", "Musik"] },
+        spielstdu: { name: "Fráze: spielst du...", words: ["Gitarre?", "Klavier?", "Tennis?", "Schach?", "Karten?", "Computer?"] }
+    };
+
+    let activeWords = [];
+    let activeImages = [];
+
+    window.onload = function() {
+        populateSelect();
+        loadTheme();
+    };
+
+    function populateSelect() {
+        const select = document.getElementById('themeSelect');
+        select.innerHTML = '';
+        for (const [key, value] of Object.entries(dataset)) {
+            let opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = value.name;
+            select.appendChild(opt);
+        }
+    }
+
+    function loadTheme() {
+        const key = document.getElementById('themeSelect').value;
+        activeWords = [...dataset[key].words];
+        
+        // Automatické sestavení cest k obrázkům: např. ../images/familie_0.png
+        activeImages = activeWords.map((_, index) => `../images/${key}_${index}.png`);
+        
+        renderWordInputs();
+        updatePreview();
+    }
+
+    function renderWordInputs() {
+        const container = document.getElementById('wordsContainer');
+        container.innerHTML = '';
+        activeWords.forEach((word, index) => {
+            const div = document.createElement('div');
+            div.className = 'word-item';
+            
+            const imgInput = document.createElement('input');
+            imgInput.type = 'text';
+            imgInput.value = activeImages[index];
+            imgInput.style.width = '220px';
+            imgInput.oninput = function() {
+                activeImages[index] = this.value;
+                updatePreview();
+            };
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = word;
+            input.oninput = function() {
+                activeWords[index] = this.value;
+                updatePreview();
+            };
+            
+            div.appendChild(imgInput);
+            div.appendChild(input);
+            container.appendChild(div);
+        });
+    }
+
+    function formatPracticeWord(word) {
+        return word.split(' ').map(part => {
+            if (part.length <= 1) return part;
+            let first = part[0];
+            let rest = part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
+            return first + rest;
+        }).join(' ');
+    }
+
+    function updatePreview() {
+        const titleText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+
+        function fillGrid(gridId) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = '';
+            
+            activeWords.forEach((word, idx) => {
+                const box = document.createElement('div');
+                box.className = 'vocab-box';
+                
+                const imgPlace = document.createElement('div');
+                imgPlace.className = 'vocab-image-place';
+                
+                const imgEl = document.createElement('img');
+                imgEl.src = activeImages[idx];
+                imgEl.onerror = function() {
+                    this.style.display = 'none';
+                    imgPlace.textContent = '🖼️ Chybí';
+                    imgPlace.style.fontSize = '0.75rem';
+                    imgPlace.style.color = '#94a3b8';
+                };
+                imgPlace.appendChild(imgEl);
+                
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'vocab-word';
+                wordDiv.textContent = (mode === 'portfolio') ? word : formatPracticeWord(word);
+                
+                box.appendChild(imgPlace);
+                box.appendChild(wordDiv);
+                grid.appendChild(box);
+            });
+        }
+
+        fillGrid('gridLeft');
+        fillGrid('gridRight');
+        
+        document.getElementById('previewLeft').querySelector('.preview-page-title').textContent = `Žák 1 (A5) - ${titleText}`;
+        document.getElementById('previewRight').querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
+    }
+
+    // Pomocná funkce pro načtení obrázku do Image objektu (asynchronně pro jsPDF)
+    function loadImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+        });
+    }
+
+    async function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        
+        const titleText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const halfWidth = 297 / 2;
+
+        // Načteme všechny obrázky předem, abychom je mohli synchronně vložit do PDF
+        const loadedImages = [];
+        for (let i = 0; i < activeImages.length; i++) {
+            const img = await loadImage(activeImages[i]);
+            loadedImages.push(img);
+        }
+
+        function drawHalf(offsetX) {
+            // Hlavička
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("BILDWÖRTERBUCH (Obrázkový slovníček)", offsetX + 10, 15);
+            
+            doc.setFont("Helvetica", "italic");
+            doc.setFontSize(10);
+            doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
+            
+            const startX = offsetX + 10;
+            const startY = 28;
+            const cols = 3;
+            const boxWidth = 41;
+            const boxHeight = 28;
+            const gap = 4;
+            
+            activeWords.forEach((word, idx) => {
+                const r = Math.floor(idx / cols);
+                const c = idx % cols;
+                
+                const x = startX + (c * (boxWidth + gap));
+                const y = startY + (r * (boxHeight + gap));
+                
+                // Vnější boxík
+                doc.setLineWidth(0.3);
+                doc.setDrawColor(0);
+                doc.rect(x, y, boxWidth, boxHeight);
+                
+                // Vnitřní boxík pro obrázek
+                doc.setLineWidth(0.1);
+                doc.setDrawColor(180);
+                doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
+                
+                // Vložení reálného obrázku přes jsPDF addImage, pokud existuje
+                const img = loadedImages[idx];
+                if (img) {
+                    // Zachování proporcí uvnitř vyhrazeného prostoru (cca 38mm x 19mm)
+                    const maxW = boxWidth - 4;
+                    const maxH = boxHeight - 11;
+                    let imgW = maxW;
+                    let imgH = (img.height / img.width) * imgW;
+                    
+                    if (imgH > maxH) {
+                        imgH = maxH;
+                        imgW = (img.width / img.height) * imgH;
+                    }
+                    
+                    // Vycentrování obrázku v rámečku
+                    const imgX = x + 1.5 + (maxW - imgW) / 2;
+                    const imgY = y + 1.5 + (maxH - imgH) / 2;
+                    
+                    try {
+                        doc.addImage(img, 'PNG', imgX, imgY, imgW, imgH);
+                    } catch (e) {
+                        console.error("Chyba při vkládání obrázku do PDF:", e);
+                    }
+                } else {
+                    // Alternativní text, pokud soubor chybí
+                    doc.setFont("Helvetica", "normal");
+                    doc.setFontSize(7);
+                    doc.text("Bild fehlt", x + 14, y + 10);
+                }
+
+                // Text popisku / procvičování
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9.5);
+                
+                let displayText = (mode === 'portfolio') ? word : formatPracticeWord(word);
+                const textWidth = doc.getTextWidth(displayText);
+                const textX = x + (boxWidth - textWidth) / 2;
+                doc.text(displayText, textX, y + boxHeight - 2.5);
+            });
+            
+            // Patička
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text("Name: ______________________", offsetX + 10, 195);
+            doc.text("Klasse: _________", offsetX + halfWidth - 35, 195);
+        }
+
+        // Kreslíme obě strany A5
+        drawHalf(0);
+        
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(120);
+        doc.setLineDashPattern([2, 2], 0);
+        doc.line(halfWidth, 0, halfWidth, 210);
+        doc.setLineDashPattern([], 0);
+        
+        drawHalf(halfWidth);
+
+        doc.save(`obrazkovy-slovnicek-${mode}.pdf`);
+    }
+</script>
+</body>
+</html>
