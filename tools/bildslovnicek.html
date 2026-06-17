@@ -2,62 +2,16 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Diagnostika Slovníčku</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0fdfa; }
-        .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; max-width: 600px; margin: 0 auto; }
-        h1 { color: #0f766e; font-size: 1.2rem; }
-        pre { background: #f1f5f9; padding: 10px; border-radius: 4px; overflow-x: auto; }
-        .err { color: #ef4444; font-weight: bold; }
-        .ok { color: #10b981; font-weight: bold; }
-    </style>
+    <title>Základní test funkčnosti</title>
 </head>
-<body>
+<body style="background: #f0fdfa; padding: 40px; font-family: sans-serif; text-align: center;">
 
-<div class="box">
-    <h2>🔍 Diagnostika načítání JSON dat</h2>
-    <p>Tato stránka zkouší přímo sáhnout pro soubor <code style="background: #e2e8f0; padding: 2px 4px;">../data/schulsachen.json</code>.</p>
-    
-    <div id="status">🔄 Pokus o stažení souboru...</div>
-    
-    <h3>Výpis z konzole / Obsah souboru:</h3>
-    <pre id="output">Zatím žádná data...</pre>
-</div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const statusEl = document.getElementById('status');
-        const outputEl = document.getElementById('output');
-        
-        const url = '../data/schulsachen.json';
-        
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Server odpověděl kódem ${response.status} (${response.statusText})`);
-                }
-                return response.text(); // Načteme nejdřív jako text, abychom viděli i rozbitý JSON
-            })
-            .then(text => {
-                statusEl.innerHTML = '<span class="ok">✅ Soubor byl úspěšně stažen!</span>';
-                outputEl.textContent = text;
-                
-                // Zkusíme, jestli je to validní JSON
-                try {
-                    const parsed = JSON.parse(text);
-                    outputEl.textContent += "\n\n--- Analýza struktury ---\n";
-                    outputEl.textContent += "JSON je validní.\n";
-                    outputEl.textContent += "Dostupné klíče: " + Object.keys(parsed).join(', ');
-                } catch(e) {
-                    outputEl.textContent += "\n\n⚠️ POZOR: Stažený text není validní JSON soubor! Chyba: " + e.message;
-                }
-            })
-            .catch(error => {
-                statusEl.innerHTML = '<span class="err">❌ Stažení selhalo!</span>';
-                outputEl.textContent = `Chyba při fetchi:\n${error.message}\n\nMožné příčiny:\n1. Soubor na adrese "${url}" neexistuje.\n2. GitHub Pages ještě nepropisoval změny (zkus Ctrl+F5).\n3. Velká/malá písmena v názvu složky "data" nebo souboru.`;
-            });
-    });
-</script>
+    <div style="background: white; padding: 30px; border-radius: 8px; border: 2px solid #0f766e; inline-block; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h1 style="color: #0f766e; margin-top: 0;">Ahoj! Stránka funguje.</h1>
+        <p style="color: #334155;">Pokud vidíš tento text, pak se soubor HTML úspěšně načetl.</p>
+        <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 20px 0;">
+        <p style="font-size: 0.9rem; color: #64748b;">Krok 2: Pokud tohle funguje, stiskni na klávesnici <strong>F12</strong>, klikni nahoře na záložku <strong>Console</strong> a napiš mi, jestli je tam nějaká červená hláška.</p>
+    </div>
 
 </body>
 </html>
