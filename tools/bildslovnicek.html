@@ -301,4 +301,119 @@
 </div>
 
 <script>
-    const themes =
+    const themes = [
+        { id: "schulsachen", name: "Schulsachen (Pomůcky)" },
+        { id: "familie", name: "Familie (Rodina)" },
+        { id: "berufe", name: "Berufe (Povolání)" },
+        { id: "hobbys", name: "Hobbys (Záliby)" },
+        { id: "sport", name: "Sportarten (Sporty)" },
+        { id: "wochentage", name: "Wochentage (Dny v týdnu)" },
+        { id: "essen", name: "Essen (Jídlo)" },
+        { id: "stundenplan", name: "Stundenplan / Monate" }
+    ];
+
+    let allFetchedItems = []; 
+    let activeItems = [];     
+    let activeImages = [];    
+
+    window.onload = function() {
+        populateSelect();
+        loadTheme();
+    };
+
+    function populateSelect() {
+        const select = document.getElementById('themeSelect');
+        if (!select) return;
+        select.innerHTML = '';
+        themes.forEach(theme => {
+            let opt = document.createElement('option');
+            opt.value = theme.id;
+            opt.textContent = theme.name;
+            select.appendChild(opt);
+        });
+    }
+
+    function loadTheme() {
+        const selectEl = document.getElementById('themeSelect');
+        if (!selectEl) return;
+        const key = selectEl.value;
+        const container = document.getElementById('wordsContainer');
+        
+        if (container) {
+            container.innerHTML = '<span class="loading-text">Načítám data z repozitáře...</span>';
+        }
+        
+        // Relativní cesta z tools/ do data/
+        const targetUrl = `../data/${key}.json`;
+        
+        fetch(targetUrl)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP chyba! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                // Dynamické vyhledání jakéhokoliv pole uvnitř JSONu (odolné proti změnám klíčů)
+                let foundArray = null;
+                if (Array.isArray(data)) {
+                    foundArray = data;
+                } else {
+                    for (let k in data) {
+                        if (Array.isArray(data[k])) {
+                            foundArray = data[k];
+                            break;
+                        }
+                    }
+                }
+
+                allFetchedItems = foundArray || [];
+
+                if (allFetchedItems.length > 0) {
+                    // Extrakce ID pro nastavení rozsahů
+                    const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
+                    const minId = ids.length ? Math.min(...ids) : 1;
+                    const maxId = ids.length ? Math.max(...ids) : 10;
+
+                    const fromEl = document.getElementById('idFrom');
+                    const toEl = document.getElementById('idTo');
+                    if (fromEl) fromEl.value = minId;
+                    if (toEl) {
+                        // Optimální mřížka 3x3 (9 slovíček) jako výchozí
+                        toEl.value = Math.min(minId + 8, maxId); 
+                    }
+                } else {
+                    console.warn("V JSON souboru nebylo nalezeno žádné pole dat.");
+                }
+
+                filterWords();
+            })
+            .catch(error => {
+                console.error("Chyba načítání:", error);
+                if (container) {
+                    container.innerHTML = `
+                        <div style="color: #ef4444; padding: 10px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 4px;">
+                            <strong>❌ Chyba při stahování dat!</strong><br>
+                            Zkoušená cesta: <code style="background: #fee2e2; padding: 2px 4px;">${targetUrl}</code><br>
+                            Ujistěte se, že složka <strong>data</strong> i soubor existují a mají malá písmena.
+                        </div>`;
+                }
+            });
+    }
+
+    function filterWords() {
+        const fromEl = document.getElementById('idFrom');
+        const toEl = document.getElementById('idTo');
+        const fromId = fromEl ? (parseInt(fromEl.value) || 1) : 1;
+        const toId = toEl ? (parseInt(toEl.value) || 99) : 99;
+
+        if (!allFetchedItems) return;
+
+        const filtered = allFetchedItems.filter(item => {
+            const itemId = parseInt(item.id);
+            // Pokud položka nemá ID, chová se jako 0 a nepropustíme ji rozsahem od 1
+            return itemId >= fromId && itemId <= toId;
+        });
+
+        activeItems = filtered; 
+
+        activeImages = filtered.map(item => {
+            if (item.image) {
