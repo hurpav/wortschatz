@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor Obrázkového Slovníčku v3</title>
+    <title>Generátor Obrázkového Slovníčku v4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -120,23 +120,6 @@
             padding: 5px;
         }
 
-        .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: var(--primary-hover);
-        }
-
         .preview-box {
             grid-column: 1 / -1;
             overflow-x: auto;
@@ -222,7 +205,7 @@
 <div class="container">
     <header>
         <h1>🖼️ Bildwörterbuch - Obrázkový slovníček</h1>
-        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s načítáním obrázků z lokálního adresáře <code>images/</code>.</p>
+        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s automatickým načítáním kompletní sady z <code>images/</code>.</p>
     </header>
 
     <div class="grid">
@@ -248,7 +231,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Slovíčka a cesty k obrázkům (relativně k souboru html):</label>
+                <label>Načtená slovíčka a odpovídající cesty k souborům:</label>
                 <div id="wordsContainer" class="word-list"></div>
             </div>
         </div>
@@ -261,7 +244,7 @@
         </div>
 
         <div class="card preview-box">
-            <h2>Živý náhled tisku (A4 rozdělená na 2x A5)</h2>
+            <h2>Živý náhled tisku (Mřížka se přizpůsobí počtu slovíček)</h2>
             <div class="preview-grid-container">
                 <div class="preview-page" id="previewLeft">
                     <div class="preview-page-title">Žák 1 (A5)</div>
@@ -277,7 +260,7 @@
 </div>
 
 <script>
-    // VNITŘNÍ DATABANKA SLOVÍČEK
+    // SPOLEČNÁ INTERNÍ BANKA DAT (Zde se definují všechna slova pro téma)
     const dataset = {
         familie: { name: "Familie (Rodina)", words: ["mein Vater", "meine Mutter", "mein Bruder", "meine Schwester", "mein Opa", "meine Oma"] },
         berufe: { name: "Berufe (Povolání)", words: ["Lehrer / in", "Arzt / Ärztin", "Koch / Köchin", "Polizist / in", "Verkäufer / in", "Programmierer"] },
@@ -307,6 +290,7 @@
             let opt = document.createElement('option');
             opt.value = key;
             opt.textContent = value.name;
+            if(key === 'schulsachen') opt.selected = true; // Výchozí nastavení na Školní pomůcky
             select.appendChild(opt);
         }
     }
@@ -315,8 +299,8 @@
         const key = document.getElementById('themeSelect').value;
         activeWords = [...dataset[key].words];
         
-        // Automatické sestavení cest k obrázkům: např. ../images/familie_0.png
-        activeImages = activeWords.map((_, index) => `../images/${key}_${index}.png`);
+        // Zde se dynamicky vygenerují cesty na základě počtu slov v daném poli
+        activeImages = activeWords.map((_, index) => `../images/${key}/${key}_${index}.png`);
         
         renderWordInputs();
         updatePreview();
@@ -332,7 +316,7 @@
             const imgInput = document.createElement('input');
             imgInput.type = 'text';
             imgInput.value = activeImages[index];
-            imgInput.style.width = '220px';
+            imgInput.style.width = '240px';
             imgInput.oninput = function() {
                 activeImages[index] = this.value;
                 updatePreview();
@@ -381,7 +365,7 @@
                 imgEl.onerror = function() {
                     this.style.display = 'none';
                     imgPlace.textContent = '🖼️ Chybí';
-                    imgPlace.style.fontSize = '0.75rem';
+                    imgPlace.style.fontSize = '0.7rem';
                     imgPlace.style.color = '#94a3b8';
                 };
                 imgPlace.appendChild(imgEl);
@@ -403,7 +387,6 @@
         document.getElementById('previewRight').querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
     }
 
-    // Pomocná funkce pro načtení obrázku do Image objektu (asynchronně pro jsPDF)
     function loadImage(url) {
         return new Promise((resolve) => {
             const img = new Image();
@@ -421,7 +404,7 @@
         const mode = document.querySelector('input[name="mode"]:checked').value;
         const halfWidth = 297 / 2;
 
-        // Načteme všechny obrázky předem, abychom je mohli synchronně vložit do PDF
+        // Přednačtení dynamického množství obrázků
         const loadedImages = [];
         for (let i = 0; i < activeImages.length; i++) {
             const img = await loadImage(activeImages[i]);
@@ -436,92 +419,3 @@
             
             doc.setFont("Helvetica", "italic");
             doc.setFontSize(10);
-            doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
-            
-            const startX = offsetX + 10;
-            const startY = 28;
-            const cols = 3;
-            const boxWidth = 41;
-            const boxHeight = 28;
-            const gap = 4;
-            
-            activeWords.forEach((word, idx) => {
-                const r = Math.floor(idx / cols);
-                const c = idx % cols;
-                
-                const x = startX + (c * (boxWidth + gap));
-                const y = startY + (r * (boxHeight + gap));
-                
-                // Vnější boxík
-                doc.setLineWidth(0.3);
-                doc.setDrawColor(0);
-                doc.rect(x, y, boxWidth, boxHeight);
-                
-                // Vnitřní boxík pro obrázek
-                doc.setLineWidth(0.1);
-                doc.setDrawColor(180);
-                doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
-                
-                // Vložení reálného obrázku přes jsPDF addImage, pokud existuje
-                const img = loadedImages[idx];
-                if (img) {
-                    // Zachování proporcí uvnitř vyhrazeného prostoru (cca 38mm x 19mm)
-                    const maxW = boxWidth - 4;
-                    const maxH = boxHeight - 11;
-                    let imgW = maxW;
-                    let imgH = (img.height / img.width) * imgW;
-                    
-                    if (imgH > maxH) {
-                        imgH = maxH;
-                        imgW = (img.width / img.height) * imgH;
-                    }
-                    
-                    // Vycentrování obrázku v rámečku
-                    const imgX = x + 1.5 + (maxW - imgW) / 2;
-                    const imgY = y + 1.5 + (maxH - imgH) / 2;
-                    
-                    try {
-                        doc.addImage(img, 'PNG', imgX, imgY, imgW, imgH);
-                    } catch (e) {
-                        console.error("Chyba při vkládání obrázku do PDF:", e);
-                    }
-                } else {
-                    // Alternativní text, pokud soubor chybí
-                    doc.setFont("Helvetica", "normal");
-                    doc.setFontSize(7);
-                    doc.text("Bild fehlt", x + 14, y + 10);
-                }
-
-                // Text popisku / procvičování
-                doc.setFont("Helvetica", "bold");
-                doc.setFontSize(9.5);
-                
-                let displayText = (mode === 'portfolio') ? word : formatPracticeWord(word);
-                const textWidth = doc.getTextWidth(displayText);
-                const textX = x + (boxWidth - textWidth) / 2;
-                doc.text(displayText, textX, y + boxHeight - 2.5);
-            });
-            
-            // Patička
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(8);
-            doc.text("Name: ______________________", offsetX + 10, 195);
-            doc.text("Klasse: _________", offsetX + halfWidth - 35, 195);
-        }
-
-        // Kreslíme obě strany A5
-        drawHalf(0);
-        
-        doc.setLineWidth(0.2);
-        doc.setDrawColor(120);
-        doc.setLineDashPattern([2, 2], 0);
-        doc.line(halfWidth, 0, halfWidth, 210);
-        doc.setLineDashPattern([], 0);
-        
-        drawHalf(halfWidth);
-
-        doc.save(`obrazkovy-slovnicek-${mode}.pdf`);
-    }
-</script>
-</body>
-</html>
