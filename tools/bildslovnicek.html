@@ -573,7 +573,8 @@
             doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
             
             const selectEl = document.getElementById('themeSelect');
-            const titleText = selectEl ? selectEl.options[selectEl.selectedIndex].text : "Slovníček";
+            let titleText = selectEl ? selectEl.options[selectEl.selectedIndex].text : "Slovníček";
+            titleText = titleText.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             const modeEl = document.querySelector('input[name="mode"]:checked');
             const mode = modeEl ? modeEl.value : 'portfolio';
             const halfWidth = 297 / 2;
