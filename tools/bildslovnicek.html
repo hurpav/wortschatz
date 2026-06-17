@@ -316,13 +316,15 @@
     let activeItems = [];     
     let activeImages = [];    
 
-    window.onload = function() {
+    // Bezpečné spuštění po kompletním načtení DOM stromu
+    document.addEventListener("DOMContentLoaded", function() {
         populateSelect();
         loadTheme();
-    };
+    });
 
     function populateSelect() {
         const select = document.getElementById('themeSelect');
+        if (!select) return;
         select.innerHTML = '';
         themes.forEach(theme => {
             let opt = document.createElement('option');
@@ -333,36 +335,49 @@
     }
 
     function loadTheme() {
-        const key = document.getElementById('themeSelect').value;
+        const selectEl = document.getElementById('themeSelect');
+        if (!selectEl) return;
+        const key = selectEl.value;
+        
         const container = document.getElementById('wordsContainer');
-        container.innerHTML = '<span class="loading-text">Načítám data...</span>';
+        if (container) {
+            container.innerHTML = '<span class="loading-text">Načítám data...</span>';
+        }
         
         fetch(`../data/${key}.json`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error("Chyba sítě při načítání JSON");
+                return response.json();
+            })
             .then(data => {
-                // Přímé vytažení pole podle klíče tématu
-                allFetchedItems = data[key] || [];
+                allFetchedItems = data[key] || data.words || data || [];
 
                 if (allFetchedItems.length > 0) {
                     const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
                     const minId = ids.length ? Math.min(...ids) : 1;
                     const maxId = ids.length ? Math.max(...ids) : 10;
 
-                    document.getElementById('idFrom').value = minId;
-                    document.getElementById('idTo').value = Math.min(minId + 8, maxId); 
+                    const fromEl = document.getElementById('idFrom');
+                    const toEl = document.getElementById('idTo');
+                    if (fromEl) fromEl.value = minId;
+                    if (toEl) toEl.value = Math.min(minId + 8, maxId); 
                 }
 
                 filterWords();
             })
             .catch(error => {
                 console.error(error);
-                container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Chyba načítání z ../data/${key}.json</span>`;
+                if (container) {
+                    container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Chyba načítání z ../data/${key}.json</span>`;
+                }
             });
     }
 
     function filterWords() {
-        const fromId = parseInt(document.getElementById('idFrom').value) || 1;
-        const toId = parseInt(document.getElementById('idTo').value) || 99;
+        const fromEl = document.getElementById('idFrom');
+        const toEl = document.getElementById('idTo');
+        const fromId = fromEl ? (parseInt(fromEl.value) || 1) : 1;
+        const toId = toEl ? (parseInt(toEl.value) || 99) : 99;
 
         activeItems = allFetchedItems.filter(item => {
             const itemId = parseInt(item.id);
@@ -382,6 +397,7 @@
 
     function renderWordInputs() {
         const container = document.getElementById('wordsContainer');
+        if (!container) return;
         container.innerHTML = '';
         
         if (activeItems.length === 0) {
@@ -394,13 +410,13 @@
             div.className = 'word-item';
             
             const label = document.createElement('span');
-            label.textContent = `ID #${item.id}:`;
+            label.textContent = `ID #${item.id || index + 1}:`;
             label.style.fontWeight = 'bold';
             label.style.minWidth = '50px';
 
             const imgInput = document.createElement('input');
             imgInput.type = 'text';
-            imgInput.value = activeImages[index];
+            imgInput.value = activeImages[index] || '';
             imgInput.style.width = '240px';
             imgInput.oninput = function() {
                 activeImages[index] = this.value;
@@ -409,7 +425,7 @@
 
             const input = document.createElement('input');
             input.type = 'text';
-            input.value = item.artikel ? `${item.artikel} ${item.de}` : item.de;
+            input.value = item.artikel ? `${item.artikel} ${item.de}` : (item.de || '');
             input.oninput = function() {
                 const parts = this.value.split(' ');
                 if (parts.length > 1 && ['der', 'die', 'das'].includes(parts[0].toLowerCase())) {
@@ -430,6 +446,7 @@
     }
 
     function formatPracticeItem(item) {
+        if (!item) return "";
         if (item.artikel && item.de) {
             let hiddenArtikel = "_ ".repeat(item.artikel.length).trim();
             let word = item.de;
@@ -445,13 +462,132 @@
 
     function updatePreview() {
         const selectEl = document.getElementById('themeSelect');
-        if (!selectEl.options.length || activeItems.length === 0) return;
+        if (!selectEl || !selectEl.options.length || activeItems.length === 0) return;
         
         const titleText = selectEl.options[selectEl.selectedIndex].text;
-        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const modeEl = document.querySelector('input[name="mode"]:checked');
+        const mode = modeEl ? modeEl.value : 'portfolio';
 
         function fillGrid(gridId) {
             const grid = document.getElementById(gridId);
+            if (!grid) return;
             grid.innerHTML = '';
             
-            activeItems.forEach
+            activeItems.forEach((item, idx) => {
+                const box = document.createElement('div');
+                box.className = 'vocab-box';
+                
+                const imgPlace = document.createElement('div');
+                imgPlace.className = 'vocab-image-place';
+                
+                const imgEl = document.createElement('img');
+                imgEl.src = activeImages[idx] || `../images/unknown.png`;
+                imgEl.onerror = function() {
+                    this.style.display = 'none';
+                    imgPlace.textContent = '🖼️ Chybí';
+                    imgPlace.style.fontSize = '0.7rem';
+                };
+                imgPlace.appendChild(imgEl);
+                
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'vocab-word';
+                wordDiv.textContent = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : (item.de || '')) : formatPracticeItem(item);
+                
+                box.appendChild(imgPlace);
+                box.appendChild(wordDiv);
+                grid.appendChild(box);
+            });
+        }
+
+        fillGrid('gridLeft');
+        fillGrid('gridRight');
+        
+        const pLeft = document.getElementById('previewLeft');
+        const pRight = document.getElementById('previewRight');
+        if (pLeft) pLeft.querySelector('.preview-page-title').textContent = `Žák 1 (A5) - ${titleText}`;
+        if (pRight) pRight.querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
+    }
+
+    function loadImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+        });
+    }
+
+    async function generatePDF() {
+        if (activeItems.length === 0) return;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        
+        const selectEl = document.getElementById('themeSelect');
+        const titleText = selectEl ? selectEl.options[selectEl.selectedIndex].text : "Slovníček";
+        const modeEl = document.querySelector('input[name="mode"]:checked');
+        const mode = modeEl ? modeEl.value : 'portfolio';
+        const halfWidth = 297 / 2;
+
+        const loadedImages = [];
+        for (let i = 0; i < activeImages.length; i++) {
+            const img = await loadImage(activeImages[i]);
+            loadedImages.push(img);
+        }
+
+        function drawHalf(offsetX) {
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
+            doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
+            
+            const startX = offsetX + 10;
+            const startY = 28;
+            const cols = 3;
+            const boxWidth = 41;
+            const boxHeight = 28;
+            const gap = 4;
+            
+            activeItems.forEach((item, idx) => {
+                const r = Math.floor(idx / cols);
+                const c = idx % cols;
+                const x = startX + (c * (boxWidth + gap));
+                const y = startY + (r * (boxHeight + gap));
+                
+                doc.setLineWidth(0.3);
+                doc.rect(x, y, boxWidth, boxHeight);
+                doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
+                
+                const img = loadedImages[idx];
+                if (img) {
+                    const maxW = boxWidth - 4;
+                    const maxH = boxHeight - 11;
+                    let imgW = maxW;
+                    let imgH = (img.height / img.width) * imgW;
+                    if (imgH > maxH) {
+                        imgH = maxH;
+                        imgW = (img.width / img.height) * imgH;
+                    }
+                    doc.addImage(img, 'PNG', x + 1.5 + (maxW - imgW)/2, y + 1.5 + (maxH - imgH)/2, imgW, imgH);
+                }
+
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9.5);
+                let displayText = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : item.de) : formatPracticeItem(item);
+                doc.text(displayText, x + (boxWidth - doc.getTextWidth(displayText)) / 2, y + boxHeight - 2.5);
+            });
+            
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text("Name: ______________________", offsetX + 10, 195);
+            doc.text("Klasse: _________", offsetX + halfWidth - 35, 195);
+        }
+
+        drawHalf(0);
+        doc.line(halfWidth, 0, halfWidth, 210);
+        drawHalf(halfWidth);
+
+        doc.save(`obrazkovy-slovnicek-ID-${mode}.pdf`);
+    }
+</script>
+</body>
+</html>
