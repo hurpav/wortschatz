@@ -361,12 +361,20 @@
         const selectX = document.getElementById('themeX');
         const selectY = document.getElementById('themeY');
         
+        // Vyčištění případného starého obsahu
+        selectX.innerHTML = '';
+        selectY.innerHTML = '';
+        
         for (const [key, value] of Object.entries(dataset)) {
-            let optX = document.createElement('option'); optX.value = key; optX.textContent = value.name;
+            let optX = document.createElement('option'); 
+            optX.value = key; 
+            optX.textContent = value.name;
             if(key === 'familie') optX.selected = true;
             selectX.appendChild(optX);
 
-            let optY = document.createElement('option'); optY.value = key; optY.textContent = value.name;
+            let optY = document.createElement('option'); 
+            optY.value = key; 
+            optY.textContent = value.name;
             if(key === 'berufe') optY.selected = true;
             selectY.appendChild(optY);
         }
