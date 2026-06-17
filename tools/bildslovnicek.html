@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor Obrázkového Slovníčku v5</title>
+    <title>Generátor Obrázkového Slovníčku v6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -86,6 +86,16 @@
             font-family: inherit;
         }
 
+        .range-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .range-group input {
+            text-align: center;
+        }
+
         .radio-group {
             display: flex;
             gap: 20px;
@@ -122,7 +132,6 @@
 
         .preview-box {
             grid-column: 1 / -1;
-            overflow-x: auto;
         }
 
         .preview-grid-container {
@@ -211,35 +220,43 @@
 <div class="container">
     <header>
         <h1>🖼️ Bildwörterbuch - Obrázkový slovníček</h1>
-        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s dynamickým načítáním JSON konfigurací slovní zásoby.</p>
+        <p>Generátor pracovních listů A5 (2x na A4) s výběrem rozsahu slovíček podle ID z JSON repozitáře.</p>
     </header>
 
     <div class="grid">
         <div class="card" style="grid-column: 1 / -1;">
-            <h2>1. Nastavení a zdroj dat</h2>
-            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+            <h2>1. Nastavení a rozsah tisku</h2>
+            <div class="grid" style="grid-template-columns: 2fr 1.5fr 2fr; gap: 20px;">
                 <div class="form-group">
-                    <label for="themeSelect">Zvolit téma ze seznamu (JSON repozitář):</label>
+                    <label for="themeSelect">Zvolit téma:</label>
                     <select id="themeSelect" onchange="loadTheme()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Rozsah ID slovíček:</label>
+                    <div class="range-group">
+                        <input type="number" id="idFrom" min="1" value="1" onchange="filterWords()">
+                        <span>až</span>
+                        <input type="number" id="idTo" min="1" value="10" onchange="filterWords()">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Podoba slovníčku:</label>
                     <div class="radio-group">
                         <label class="radio-label">
                             <input type="radio" name="mode" value="portfolio" checked onchange="updatePreview()"> 
-                            📁 Tisk do portfolia (Komplet slovo)
+                            📁 Portfolio
                         </label>
                         <label class="radio-label">
                             <input type="radio" name="mode" value="practice" onchange="updatePreview()"> 
-                            ✏️ Procvičování (První písmeno + linka)
+                            ✏️ Procvičování
                         </label>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <label id="listLabel">Načtená slovíčka a cesty k obrázkům:</label>
+                <label id="listLabel">Slovíčka vybraná k tisku:</label>
                 <div id="wordsContainer" class="word-list">
-                    <span class="loading-text">Vyberte téma k načtení...</span>
+                    <span class="loading-text">Vyberte téma...</span>
                 </div>
             </div>
         </div>
@@ -252,7 +269,7 @@
         </div>
 
         <div class="card preview-box">
-            <h2>Živý náhled tisku (Mřížka se přizpůsobí struktuře JSONu)</h2>
+            <h2>Živý náhled vybraného rozsahu ID</h2>
             <div class="preview-grid-container">
                 <div class="preview-page" id="previewLeft">
                     <div class="preview-page-title">Žák 1 (A5)</div>
@@ -268,7 +285,6 @@
 </div>
 
 <script>
-    // SEZNAM TÉMAT - mapuje se na soubory ve složce ../data/[id].json
     const themes = [
         { id: "schulsachen", name: "Schulsachen (Pomůcky)" },
         { id: "familie", name: "Familie (Rodina)" },
@@ -280,8 +296,9 @@
         { id: "stundenplan", name: "Stundenplan / Monate" }
     ];
 
-    let activeWords = [];
-    let activeImages = [];
+    let allFetchedItems = []; // Kompletní data z JSONu
+    let activeWords = [];     // Vyfiltrovaná slova pro zobrazení/tisk
+    let activeImages = [];    // Vyfiltrované obrázky pro zobrazení/tisk
 
     window.onload = function() {
         populateSelect();
@@ -299,29 +316,31 @@
         });
     }
 
-    // DYNAMICKÉ NAČÍTÁNÍ JSON DATASETU (Stejně jako u Domina)
     function loadTheme() {
         const key = document.getElementById('themeSelect').value;
         const container = document.getElementById('wordsContainer');
         container.innerHTML = '<span class="loading-text">Načítám data z repozitáře...</span>';
         
-        // Cesta odpovídá struktuře složek: ../data/nazev_tematu.json
         fetch(`../data/${key}.json`)
             .then(response => {
                 if (!response.ok) throw new Error('Soubor JSON nebyl nalezen');
                 return response.json();
             })
             .then(data => {
-                // Přizpůsobení struktuře (předpokládáme pole objektů nebo pole slov)
-                if (Array.isArray(data)) {
-                    activeWords = data.map(item => typeof item === 'object' ? item.german : item);
-                    activeImages = data.map((item, index) => {
-                        if (typeof item === 'object' && item.image) return item.image;
-                        return `../images/${key}/${key}_${index}.png`;
-                    });
+                const firstKey = Object.keys(data)[0];
+                allFetchedItems = data[firstKey] || [];
+
+                if (allFetchedItems.length > 0) {
+                    // Zjistíme min a max ID v souboru a nastavíme výchozí rozsah
+                    const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
+                    const minId = ids.length ? Math.min(...ids) : 1;
+                    const maxId = ids.length ? Math.max(...ids) : 10;
+
+                    document.getElementById('idFrom').value = minId;
+                    document.getElementById('idTo').value = Math.min(minId + 8, maxId); // Výchozí bezpečný tisk cca 9 slovíček
                 }
-                renderWordInputs();
-                updatePreview();
+
+                filterWords();
             })
             .catch(error => {
                 console.error(error);
@@ -329,13 +348,46 @@
             });
     }
 
+    function filterWords() {
+        const fromId = parseInt(document.getElementById('idFrom').value) || 1;
+        const toId = parseInt(document.getElementById('idTo').value) || 99;
+
+        // Filtrace položek, které spadají do zadaného rozsahu ID
+        const filtered = allFetchedItems.filter(item => {
+            const itemId = parseInt(item.id);
+            return itemId >= fromId && itemId <= toId;
+        });
+
+        activeWords = filtered.map(item => item.de || "");
+        activeImages = filtered.map(item => {
+            if (item.image) {
+                return item.image.startsWith('images/') ? `../${item.image}` : item.image;
+            }
+            return `../images/unknown.png`;
+        });
+
+        renderWordInputs();
+        updatePreview();
+    }
+
     function renderWordInputs() {
         const container = document.getElementById('wordsContainer');
         container.innerHTML = '';
+        
+        if(activeWords.length === 0) {
+            container.innerHTML = '<span class="loading-text" style="color: #f59e0b;">⚠️ V tomto rozsahu ID nebyla nalezena žádná slovíčka.</span>';
+            return;
+        }
+
         activeWords.forEach((word, index) => {
             const div = document.createElement('div');
             div.className = 'word-item';
             
+            const label = document.createElement('span');
+            label.textContent = `ID #${allFetchedItems.find(item => item.de === word)?.id || index+1}:`;
+            label.style.fontWeight = 'bold';
+            label.style.minWidth = '50px';
+
             const imgInput = document.createElement('input');
             imgInput.type = 'text';
             imgInput.value = activeImages[index];
@@ -353,6 +405,7 @@
                 updatePreview();
             };
             
+            div.appendChild(label);
             div.appendChild(imgInput);
             div.appendChild(input);
             container.appendChild(div);
@@ -440,7 +493,7 @@
         function drawHalf(offsetX) {
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(14);
-            doc.text("BILDWÖRTERBUCH (Obrázkový slovníček)", offsetX + 10, 15);
+            doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
             
             doc.setFont("Helvetica", "italic");
             doc.setFontSize(10);
@@ -519,7 +572,7 @@
         
         drawHalf(halfWidth);
 
-        doc.save(`obrazkovy-slovnicek-${mode}.pdf`);
+        doc.save(`obrazkovy-slovnicek-ID-${mode}.pdf`);
     }
 </script>
 </body>
