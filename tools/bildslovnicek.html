@@ -33,27 +33,33 @@
     let activeItems = [];
     let activeImages = [];
 
-    async function loadTheme() {
+   async function loadTheme() {
         const key = document.getElementById('themeSelect').value;
         const container = document.getElementById('wordsContainer');
+        const url = `../data/${key}.json`; // Tady je cesta, která musí fungovat
+        
+        console.log("Pokouším se načíst z:", url); // Vypíše cestu do konzole (F12)
+        
         try {
-            const response = await fetch(`../data/${key}.json`);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Soubor nenalezen: " + response.status);
+            
             const data = await response.json();
             activeItems = data[key] || data.words || [];
-            activeImages = activeItems.map(i => i.image ? `../${i.image}` : `../images/unknown.png`);
-            container.innerHTML = "Data načtena.";
+            
+            // Debug: pokud se načte, vypíšeme počet položek
+            console.log("Načteno položek:", activeItems.length);
+            
+            activeImages = activeItems.map(i => {
+                // Pokud obrázek v JSONu začíná "images/", přidáme '../', aby se trefil do rootu
+                return i.image ? (i.image.startsWith('../') ? i.image : `../${i.image}`) : `../images/unknown.png`;
+            });
+            
+            container.innerHTML = `Načteno ${activeItems.length} slovíček.`;
         } catch(e) {
-            container.innerHTML = "❌ Chyba načítání z ../data/" + key + ".json";
+            console.error(e);
+            container.innerHTML = `❌ Chyba: ${e.message} <br> Hledám v: ${url}`;
         }
-    }
-
-    function loadImage(url) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.src = url;
-            img.onload = () => resolve(img);
-            img.onerror = () => resolve(null);
-        });
     }
 
     async function generatePDF() {
