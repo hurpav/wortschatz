@@ -143,4 +143,86 @@
             border-radius: 4px;
         }
 
-        .preview-page
+        .preview-page {
+            background: white;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 350px;
+        }
+
+        .preview-page-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #94a3b8;
+            padding-bottom: 5px;
+        }
+
+        .vocab-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .vocab-box {
+            border: 1px solid #475569;
+            height: 95px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+
+        .vocab-image-place {
+            flex-grow: 1;
+            border: 1px dashed #cbd5e1;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            overflow: hidden;
+        }
+
+        .vocab-image-place img {
+            max-height: 45px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .vocab-word {
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            grid-column: 1 / -1;
+        }
+        
+        .loading-text {
+            color: #0f766e;
