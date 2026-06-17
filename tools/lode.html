@@ -498,4 +498,49 @@
             doc.setFont("Helvetica", "bold"); doc.setFontSize(9.5);
             doc.text(title, startX, startY);
 
-            const rowCount = currentY
+            const rowCount = currentY.length;
+            const colCount = currentX.length;
+
+            const firstColWidth = 33;  
+            const cellWidth = 16;      
+            const cellHeight = 10;     
+
+            doc.setFont("Helvetica", "normal"); doc.setFontSize(7.5);
+
+            for (let r = 0; r <= rowCount + 1; r++) {
+                let currentYPos = startY + 3 + (r * cellHeight);
+                let totalGridWidth = firstColWidth + (colCount * cellWidth);
+                doc.line(startX, currentYPos, startX + totalGridWidth, currentYPos);
+
+                if (r > 0 && r <= rowCount) {
+                    doc.setFont("Helvetica", "bold");
+                    doc.text(currentY[r-1], startX + 2, currentYPos + cellHeight - 3.5);
+                    doc.setFont("Helvetica", "normal");
+                }
+            }
+
+            for (let c = 0; c <= colCount + 1; c++) {
+                let currentXPos = startX + (c === 0 ? 0 : firstColWidth + ((c - 1) * cellWidth));
+                let totalGridHeight = cellHeight + (rowCount * cellHeight);
+                doc.line(currentXPos, startY + 3, currentXPos, startY + 3 + totalGridHeight);
+
+                if (c > 0 && c <= colCount) {
+                    let splitText = doc.splitTextToSize(currentX[c-1], cellWidth - 1);
+                    doc.text(splitText, startX + firstColWidth + ((c - 1) * cellWidth) + 1, startY + 7);
+                }
+            }
+
+            doc.setFont("Helvetica", "italic"); doc.setFontSize(6.5);
+            doc.text(zahlaviText, startX + 1, startY + 7);
+        }
+
+        drawPlayerSheet(0, 1);
+        doc.setLineDashPattern([2, 2], 0); doc.line(halfWidth, 0, halfWidth, 210); doc.setLineDashPattern([], 0);
+        drawPlayerSheet(halfWidth, 2);
+
+        doc.save("schiffe-versenken-parnik.pdf");
+    }
+</script>
+
+</body>
+</html>
