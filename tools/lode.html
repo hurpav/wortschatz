@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor Schiffe Versenken v5 (Propojeno s GitHubem)</title>
+    <title>Generátor Schiffe Versenken v5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -212,7 +212,7 @@
             display: flex;
             gap: 1px;
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -224,8 +224,8 @@
 
 <div class="container">
     <header>
-        <h1>🚢 Schiffe Versenken - Central Generator</h1>
-        <p>Propojeno se sdílenou GitHub databází témat. Verze obsahující parník s komínkem.</p>
+        <h1>🚢 Schiffe Versenken - Generator</h1>
+        <p>Verze obsahující interní databanku a 4políčkovou loď s komínkem (parník).</p>
     </header>
 
     <div class="grid">
@@ -233,14 +233,11 @@
             <h2>1. Osa X (Sloupce v tabulce)</h2>
             <div class="form-group">
                 <label for="themeX">Vybrat téma:</label>
-                <select id="themeX" onchange="loadThemeFromGitHub('X')">
-                    <option value="">-- Vyberte téma z repozitáře --</option>
-                    <option value="schulsachen.json" selected>Schulsachen (Školní pomůcky)</option>
-                </select>
+                <select id="themeX" onchange="loadTheme('X')"></select>
             </div>
             <div class="form-group">
                 <label>Slovíčka na ose X:</label>
-                <div id="wordsX" class="word-list">Načítám data...</div>
+                <div id="wordsX" class="word-list"></div>
             </div>
         </div>
 
@@ -248,14 +245,11 @@
             <h2>2. Osa Y (Řádky v tabulce)</h2>
             <div class="form-group">
                 <label for="themeY">Vybrat téma:</label>
-                <select id="themeY" onchange="loadThemeFromGitHub('Y')">
-                    <option value="">-- Vyberte téma z repozitáře --</option>
-                    <option value="schulsachen.json" selected>Schulsachen (Školní pomůcky)</option>
-                </select>
+                <select id="themeY" onchange="loadTheme('Y')"></select>
             </div>
             <div class="form-group">
                 <label>Slovíčka na ose Y:</label>
-                <div id="wordsY" class="word-list">Načítám data...</div>
+                <div id="wordsY" class="word-list"></div>
             </div>
         </div>
 
@@ -264,21 +258,21 @@
             <div class="grid" style="grid-template-columns: 1fr 1fr; margin: 0 0 15px 0; gap: 15px;">
                 <div class="form-group">
                     <label for="redemittelUtok">Útok (Angriff):</label>
-                    <input type="text" id="redemittelUtok" value="Hast du [das Buch] vlevo / nahoře?">
+                    <input type="text" id="redemittelUtok" value="Ist dein [Vater] [Lehrer]?">
                 </div>
                 <div class="form-group">
                     <label for="redemittelOdpoved">Odpověď (Antwort):</label>
-                    <input type="text" id="redemittelOdpoved" value="Ja (Treffer!) / Nein (Wasser!)">
+                    <input type="text" id="redemittelOdpoved" value="Ja, er ist [Lehrer]. (Treffer!) / Nein, er ist kein [Lehrer]. (Wasser!)">
                 </div>
             </div>
             <div class="grid" style="grid-template-columns: 1fr 1fr; margin: 0 0 15px 0; gap: 15px;">
                 <div class="form-group">
                     <label for="gramatika">Gramatická poznámka:</label>
-                    <input type="text" id="gramatika" value="Spojením slovíček z os tvoříš cílová políčka.">
+                    <input type="text" id="gramatika" value="U povolání nepoužíváme člen. Zápor je kein / keine.">
                 </div>
                 <div class="form-group">
                     <label for="textZahlavi">Text v levém horním rohu tabulky:</label>
-                    <input type="text" id="textZahlavi" value="Schulsachen / Schulsachen">
+                    <input type="text" id="textZahlavi" value="Ist dein/e... / von Beruf?">
                 </div>
             </div>
 
@@ -337,61 +331,44 @@
 </div>
 
 <script>
-    const githubUser = "hurpav"; 
-    const repoName = "wortschatz";
+    // INTERNÍ BANKA DAT
+    const dataset = {
+        familie: { name: "Familie (Rodina)", words: ["mein Vater", "meine Mutter", "mein Bruder", "meine Schwester", "mein Opa", "meine Oma"] },
+        berufe: { name: "Berufe (Povolání)", words: ["Lehrer / in", "Arzt / Ärztin", "Koch / Köchin", "Polizist / in", "Verkäufer / in", "Programmierer"] },
+        hobbys: { name: "Hobbys (Záliby)", words: ["Lesen", "Musik hören", "Zocken", "Kochen", "Reisen", "Malen"] },
+        sport: { name: "Sportarten (Sporty)", words: ["Fussball", "Tennis", "Schwimmen", "Basketball", "Volleyball", "Radfahren"] },
+        wochentage: { name: "Wochentage (Dny v týdnu)", words: ["am Montag", "am Dienstag", "am Mittwoch", "am Donnerstag", "am Freitag", "am Samstag"] },
+        hastdu: { name: "Fráze: hast du...", words: ["Zeit?", "Geld?", "Hunger?", "ein Auto?", "ein Fahrrad?", "Geschwister?"] },
+        isstdugerne: { name: "Fráze: isst du gerne...", words: ["Pizza?", "Sushi?", "Salat?", "Fleisch?", "Gemüse?", "Obst?"] },
+        essen: { name: "Essen (Jídlo)", words: ["das Brot", "die Butter", "der Käse", "der Apfel", "die Banane", "das Ei"] },
+        schulsachen: { name: "Schulsachen (Pomůcky)", words: ["der Block", "der Kuli", "das Buch", "die Schere", "der Bleistift", "das Mäppchen"] },
+        stundenplan: { name: "Stundenplan / Monate", words: ["Deutsch", "Mathe", "Englisch", "Sport", "Kunst", "Musik"] },
+        spielstdu: { name: "Fráze: spielst du...", words: ["Gitarre?", "Klavier?", "Tennis?", "Schach?", "Karten?", "Computer?"] }
+    };
 
     const fleetConfig = { '4t': 1, 3: 2, 2: 3, 1: 0 };
 
-    let currentX = [];
-    let currentY = [];
+    let currentX = [...dataset.familie.words];
+    let currentY = [...dataset.berufe.words];
 
     window.onload = function() {
-        // Inicializační stažení výchozího schulsachen pro obě osy
-        loadThemeFromGitHub('X');
-        loadThemeFromGitHub('Y');
+        populateSelects();
+        updateWordDisplays();
+        updatePreview();
     };
 
-    async function loadThemeFromGitHub(axis) {
-        const select = document.getElementById(`theme${axis}`);
-        const filename = select.value;
-        const displayContainer = document.getElementById(`words${axis}`);
+    function populateSelects() {
+        const selectX = document.getElementById('themeX');
+        const selectY = document.getElementById('themeY');
         
-        if (!filename) return;
+        for (const [key, value] of Object.entries(dataset)) {
+            let optX = document.createElement('option'); optX.value = key; optX.textContent = value.name;
+            if(key === 'familie') optX.selected = true;
+            selectX.appendChild(optX);
 
-        displayContainer.innerText = "🔄 Načítám data...";
-        const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${filename}?_ts=` + new Date().getTime();
-
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Nepodařilo se stáhnout data.");
-            
-            const data = await response.json();
-            let loadedWords = [];
-
-            if (Array.isArray(data)) { loadedWords = data; } 
-            else if (data.words && Array.isArray(data.words)) { loadedWords = data.words; } 
-            else if (data.slovicka && Array.isArray(data.slovicka)) { loadedWords = data.slovicka; } 
-            else {
-                const foundKey = Object.keys(data).find(key => Array.isArray(data[key]));
-                loadedWords = foundKey ? data[foundKey] : [];
-            }
-
-            // Vytáhneme pouze německá slovíčka a omezíme na maximálně 6 položek pro ideální herní mřížku
-            let wordsArray = loadedWords.map(w => w.de || '').filter(w => w !== '').slice(0, 6);
-
-            if (axis === 'X') {
-                currentX = wordsArray;
-            } else {
-                currentY = wordsArray;
-            }
-
-            updateZahlaviText();
-            displayTags(`words${axis}`, wordsArray);
-            updatePreview();
-
-        } catch (error) {
-            console.error(error);
-            displayContainer.innerText = "❌ Chyba stahování.";
+            let optY = document.createElement('option'); optY.value = key; optY.textContent = value.name;
+            if(key === 'berufe') optY.selected = true;
+            selectY.appendChild(optY);
         }
     }
 
@@ -403,14 +380,25 @@
         }
     }
 
+    function loadTheme(axis) {
+        const selectedTheme = document.getElementById(`theme${axis}`).value;
+        if (axis === 'X') currentX = [...dataset[selectedTheme].words];
+        else currentY = [...dataset[selectedTheme].words];
+        
+        updateZahlaviText();
+        updateWordDisplays();
+        updatePreview();
+    }
+
     function updateZahlaviText() {
-        const selectX = document.getElementById('themeX');
-        const selectY = document.getElementById('themeY');
-        
-        const nameX = selectX.options[selectX.selectedIndex] ? selectX.options[selectX.selectedIndex].text.split(' ')[0] : "X";
-        const nameY = selectY.options[selectY.selectedIndex] ? selectY.options[selectY.selectedIndex].text.split(' ')[0] : "Y";
-        
+        const nameX = document.getElementById('themeX').options[document.getElementById('themeX').selectedIndex].text.split(' ')[0];
+        const nameY = document.getElementById('themeY').options[document.getElementById('themeY').selectedIndex].text.split(' ')[0];
         document.getElementById('textZahlavi').value = `${nameX} / ${nameY}`;
+    }
+
+    function updateWordDisplays() {
+        displayTags('wordsX', currentX);
+        displayTags('wordsY', currentY);
     }
 
     function displayTags(elementId, words) {
@@ -448,11 +436,6 @@
     }
 
     function generatePDF() {
-        if (currentX.length === 0 || currentY.length === 0) {
-            alert("Nejprve musíte mít úspěšně načtená slovíčka pro obě osy!");
-            return;
-        }
-
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
@@ -515,49 +498,4 @@
             doc.setFont("Helvetica", "bold"); doc.setFontSize(9.5);
             doc.text(title, startX, startY);
 
-            const rowCount = currentY.length;
-            const colCount = currentX.length;
-
-            const firstColWidth = 33;  
-            const cellWidth = 16;      
-            const cellHeight = 10;     
-
-            doc.setFont("Helvetica", "normal"); doc.setFontSize(7.5);
-
-            for (let r = 0; r <= rowCount + 1; r++) {
-                let currentYPos = startY + 3 + (r * cellHeight);
-                let totalGridWidth = firstColWidth + (colCount * cellWidth);
-                doc.line(startX, currentYPos, startX + totalGridWidth, currentYPos);
-
-                if (r > 0 && r <= rowCount) {
-                    doc.setFont("Helvetica", "bold");
-                    doc.text(currentY[r-1], startX + 2, currentYPos + cellHeight - 3.5);
-                    doc.setFont("Helvetica", "normal");
-                }
-            }
-
-            for (let c = 0; c <= colCount + 1; c++) {
-                let currentXPos = startX + (c === 0 ? 0 : firstColWidth + ((c - 1) * cellWidth));
-                let totalGridHeight = cellHeight + (rowCount * cellHeight);
-                doc.line(currentXPos, startY + 3, currentXPos, startY + 3 + totalGridHeight);
-
-                if (c > 0 && c <= colCount) {
-                    let splitText = doc.splitTextToSize(currentX[c-1], cellWidth - 1);
-                    doc.text(splitText, startX + firstColWidth + ((c - 1) * cellWidth) + 1, startY + 7);
-                }
-            }
-
-            doc.setFont("Helvetica", "italic"); doc.setFontSize(6.5);
-            doc.text(zahlaviText, startX + 1, startY + 7);
-        }
-
-        drawPlayerSheet(0, 1);
-        doc.setLineDashPattern([2, 2], 0); doc.line(halfWidth, 0, halfWidth, 210); doc.setLineDashPattern([], 0);
-        drawPlayerSheet(halfWidth, 2);
-
-        doc.save("schiffe-versenken-parnik.pdf");
-    }
-</script>
-
-</body>
-</html>
+            const rowCount = currentY
