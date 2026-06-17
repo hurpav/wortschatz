@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wortschatz - Textový Slovníček v1.0</title>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --bg: #f0f9ff;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 5px;
+            color: var(--primary);
+        }
+
+        select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea {
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .flex-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th, table td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .loading-text {
+            color: var(--primary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 id="mainTitle">📝 Wortschatz</h1>
+        <p>Export slovíček pro Blooket (CSV) a rychlé kopírování pro Wordwall.</p>
+    </header>
+
+    <div class="card">
+        <h2>1. Výběr tématu slovíček</h2>
+        <div style="margin-bottom: 15px;">
+            <label for="themeSelect" style="display:block; font-weight:600; margin-bottom:5px;">Téma:</label>
+            <select id="themeSelect" onchange="loadTheme()">
+                <option value="schulsachen">Schulsachen (Pomůcky)</option>
+                <option value="familie">Familie (Rodina)</option>
+                <option value="berufe">Berufe (Povolání)</option>
+                <option value="hobbys">Hobbys (Záliby)</option>
+                <option value="sport">Sportarten (Sporty)</option>
+                <option value="wochentage">Wochentage (Dny v týdnu)</option>
+                <option value="essen">Essen (Jídlo)</option>
+                <option value="stundenplan">Stundenplan / Monate</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>2. Rychlé kopírování (Wordwall / Quizlet)</h2>
+        <p style="font-size: 0.9rem; margin-top:0;">Formát: Němčina [tabulátor] Čeština. Ideální pro přímé vložení.</p>
+        <textarea id="copyArea" rows="6" readonly placeholder="Zde se objeví text ke zkopírování..."></textarea>
+        <div class="flex-buttons">
+            <button class="btn btn-success" onclick="copyToClipboard()">📋 Zkopírovat do schránky</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>3. Export pro Blooket</h2>
+        <p style="font-size: 0.9rem; margin-top:0;">Vygeneruje čisté CSV připravené pro hromadný import do Blooket setu.</p>
+        <button class="btn" onclick="exportToBlooketCSV()">📊 Stáhnout Blooket CSV</button>
+    </div>
+
+    <div class="card">
+        <h2>Náhled načtených slovíček</h2>
+        <div id="tableContainer">
+            <span class="loading-text">Vyberte téma nebo čekám na načtení...</span>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="../index.html" style="text-decoration: none;">
+            <button class="btn btn-secondary" type="button">🏠 Zpět na Dashboard</button>
+        </a>
+    </div>
+</div>
+
+<script>
+    let currentWords = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadTheme();
+    });
+
+    async function loadTheme() {
+        const selectEl = document.getElementById('themeSelect');
+        if (!selectEl) return;
+        const key = selectEl.value;
+        const titleText = selectEl.options[selectEl.selectedIndex].text;
+        
+        // Dynamická úprava hlavního nadpisu
+        document.getElementById('mainTitle').textContent = `📝 Wortschatz - ${titleText.split(' ')[0]}`;
+
+        const container = document.getElementById('tableContainer');
+        if (container) container.innerHTML = '<span class="loading-text">Načítám data...</span>';
+
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
+        
+        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
+        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+
+        try {
+            let response = await fetch(primaryUrl);
+            if (!response.ok) response = await fetch(backupUrl);
+            if (!response.ok) throw new Error("Soubor s daty nebyl nalezen.");
+
+            const data = await response.json();
+            let rawData = data[key] || data.words || data;
+            
+            if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
+                const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                currentWords = firstKey ? rawData[firstKey] : [];
+            } else if (Array.isArray(rawData)) {
+                currentWords = rawData;
+            } else {
+                currentWords = [];
+            }
+
+            renderData();
+        } catch (err) {
+            console.error(err);
+            if (container) container.innerHTML = `<span style="color:red;">Chyba při načítání: ${err.message}</span>`;
+        }
+    }
+
+    function renderData() {
+        const copyArea = document.getElementById('copyArea');
+        const container = document.getElementById('tableContainer');
+        
+        if (currentWords.length === 0) {
+            copyArea.value = "";
+            container.innerHTML = "Žádná slovíčka k dispozici.";
+            return;
+        }
+
+        let textLines = [];
+        let tableHtml = `<table><thead><tr><th>Německy</th><th>Česky</th></tr></thead><tbody>`;
+
+        currentWords.forEach(item => {
+            const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
+            const czWord = item.cs || "";
+            
+            // Příprava pro Wordwall (odděleno tabulátorem)
+            textLines.push(`${deWord}\t${czWord}`);
+            
+            // Příprava tabulky
+            tableHtml += `<tr><td><strong>${deWord}</strong></td><td>${czWord}</td></tr>`;
+        });
+
+        tableHtml += `</tbody></table>`;
+        
+        copyArea.value = textLines.join('\n');
+        container.innerHTML = tableHtml;
+    }
+
+    function copyToClipboard() {
+        const copyArea = document.getElementById('copyArea');
+        copyArea.select();
+        copyArea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyArea.value);
+        
+        alert("Slovíčka byla zkopírována do schránky! Můžeš je vložit do Wordwallu.");
+    }
+
+    function exportToBlooketCSV() {
+        if (currentWords.length === 0) return;
+
+        // Hlavička Blooket šablony: Question, Answer, Alternates..., Time Limit
+        let csvContent = "data:text/csv;charset=utf-8,Question,Answer,Time Limit\n";
+        
+        currentWords.forEach(item => {
+            const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
+            const czWord = item.cs || "";
+            
+            // Ošetření uvozovek v CSV
+            const q = `"${deWord.replace(/"/g, '""')}"`;
+            const a = `"${czWord.replace(/"/g, '""')}"`;
+            
+            // Výchozí časový limit 20 sekund pro Blooket otázečku
+            csvContent += `${q},${a},20\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        
+        const selectEl = document.getElementById('themeSelect');
+        const key = selectEl ? selectEl.value : 'slovnicek';
+        
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `blooket-${key}.csv`);
+        document.body.appendChild(link);
+        
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
