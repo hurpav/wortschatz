@@ -604,8 +604,8 @@
             const startX = 15;
             const startY = 38;
             const cols = 3;
-            const boxWidth = 56;  // Větší šířka boxu na A4
-            const boxHeight = 42; // Větší výška boxu na A4
+            const boxWidth = 56;  
+            const boxHeight = 42; 
             const gap = 6;
             
             activeItems.forEach((item, idx) => {
@@ -632,7 +632,8 @@
                 }
 
                 doc.setFont("Helvetica", "bold");
-                doc.setFontSize(12); // Větší písmo pro pohodlné psaní žáků
+                // Pro procvičování na A4 dáme o něco větší písmo, aby vynikly mezery
+                doc.setFontSize(mode === 'portfolio' ? 12 : 13.5); 
                 let displayText = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : item.de) : formatPracticeItem(item);
                 doc.text(displayText, x + (boxWidth - doc.getTextWidth(displayText)) / 2, y + boxHeight - 3.5);
             });
@@ -686,7 +687,7 @@
                     }
 
                     doc.setFont("Helvetica", "bold");
-                    doc.setFontSize(9.5);
+                    doc.setFontSize(mode === 'portfolio' ? 9.5 : 10.5);
                     let displayText = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : item.de) : formatPracticeItem(item);
                     doc.text(displayText, x + (boxWidth - doc.getTextWidth(displayText)) / 2, y + boxHeight - 2.5);
                 });
