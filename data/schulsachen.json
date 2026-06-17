@@ -2,7 +2,8 @@
   "Schulsachen": [
     {
       "id": 1,
-      "de": "der Rucksack",
+      "artikel": "der",
+      "de": "Rucksack",
       "cz": "batoh",
       "image": "images/schulsachen/rucksack.png",
       "blooket": {
@@ -14,7 +15,8 @@
     },
     {
       "id": 2,
-      "de": "das Mäppchen",
+      "artikel": "das",
+      "de": "Mäppchen",
       "cz": "penál",
       "image": "images/schulsachen/mappchen.png",
       "blooket": {
@@ -26,7 +28,8 @@
     },
     {
       "id": 3,
-      "de": "das Heft",
+      "artikel": "das",
+      "de": "Heft",
       "cz": "sešit",
       "image": "images/schulsachen/heft.png",
       "blooket": {
@@ -38,7 +41,8 @@
     },
     {
       "id": 4,
-      "de": "das Lehrbuch",
+      "artikel": "das",
+      "de": "Lehrbuch",
       "cz": "učebnice",
       "image": "images/schulsachen/lehrbuch.png",
       "blooket": {
@@ -50,7 +54,8 @@
     },
     {
       "id": 5,
-      "de": "der Textmarker",
+      "artikel": "der",
+      "de": "Textmarker",
       "cz": "zvýrazňovač",
       "image": "images/schulsachen/textmarker.png",
       "blooket": {
@@ -62,7 +67,8 @@
     },
     {
       "id": 6,
-      "de": "der Radiergummi",
+      "artikel": "der",
+      "de": "Radiergummi",
       "cz": "guma",
       "image": "images/schulsachen/radiergummi.png",
       "blooket": {
@@ -74,7 +80,8 @@
     },
     {
       "id": 7,
-      "de": "der Spitzer",
+      "artikel": "der",
+      "de": "Spitzer",
       "cz": "ořezávátko",
       "image": "images/schulsachen/anspitzer.png",
       "blooket": {
@@ -86,135 +93,10 @@
     },
     {
       "id": 8,
-      "de": "das Lineal",
+      "artikel": "das",
+      "de": "Lineal",
       "cz": "pravítko",
       "image": "images/schulsachen/lineal.png",
       "blooket": {
         "question": "Jak se německy řekne 'pravítko'?",
         "answers": ["das Lineal", "das Buch", "der Kleber", "die Schere"],
-        "time_limit": 20,
-        "correct_answer": "das Lineal"
-      }
-    },
-    {
-      "id": 9,
-      "de": "der Kleber",
-      "cz": "lepidlo",
-      "image": "images/schulsachen/kleber.png",
-      "blooket": {
-        "question": "Přelož: der Kleber",
-        "answers": ["lepidlo", "páska", "guma", "nůžky"],
-        "time_limit": 20,
-        "correct_answer": "lepidlo"
-      }
-    },
-    {
-      "id": 10,
-      "de": "die Schere",
-      "cz": "nůžky",
-      "image": "images/schulsachen/schere.png",
-      "blooket": {
-        "question": "Co znamená 'die Schere'?",
-        "answers": ["nůžky", "lepidlo", "pravítko", "papír"],
-        "time_limit": 20,
-        "correct_answer": "nůžky"
-      }
-    },
-    {
-      "id": 11,
-      "de": "der Buntstift",
-      "cz": "pastelka",
-      "image": "images/schulsachen/buntstift.png",
-      "blooket": {
-        "question": "Jak se německy řekne 'pastelka'?",
-        "answers": ["der Buntstift", "der Bleistift", "der Pinsel", "der Füller"],
-        "time_limit": 20,
-        "correct_answer": "der Buntstift"
-      }
-    },
-    {
-      "id": 12,
-      "de": "der Bleistift",
-      "cz": "tužka",
-      "image": "images/schulsachen/bleistift.png",
-      "blooket": {
-        "question": "Přelož: der Bleistift",
-        "answers": ["tužka", "pero", "pastelka", "zvýrazňovač"],
-        "time_limit": 20,
-        "correct_answer": "tužka"
-      }
-    },
-    {
-      "id": 13,
-      "de": "der Ordner",
-      "cz": "pořadač / šanon",
-      "image": "images/schulsachen/ordner.png",
-      "blooket": {
-        "question": "Co znamená 'der Ordner'?",
-        "answers": ["pořadač / šanon", "sešit", "kniha", "blok"],
-        "time_limit": 20,
-        "correct_answer": "pořadač / šanon"
-      }
-    },
-    {
-      "id": 14,
-      "de": "der Taschenrechner",
-      "cz": "kalkulačka",
-      "image": "images/schulsachen/taschenrechner.png",
-      "blooket": {
-        "question": "Jak se německy řekne 'kalkulačka'?",
-        "answers": ["der Taschenrechner", "das Lineal", "der Zirkel", "das Buch"],
-        "time_limit": 20,
-        "correct_answer": "der Taschenrechner"
-      }
-    },
-    {
-      "id": 15,
-      "de": "der Zirkel",
-      "cz": "kružítko",
-      "image": "images/schulsachen/zirkel.png",
-      "blooket": {
-        "question": "Přelož: der Zirkel",
-        "answers": ["kružítko", "pravítko", "ořezávátko", "nůžky"],
-        "time_limit": 20,
-        "correct_answer": "kružítko"
-      }
-    },
-    {
-      "id": 16,
-      "de": "der Pinsel",
-      "cz": "štětec",
-      "image": "images/schulsachen/pinsel.png",
-      "blooket": {
-        "question": "Co znamená 'der Pinsel'?",
-        "answers": ["štětec", "pastelka", "tužka", "lepidlo"],
-        "time_limit": 20,
-        "correct_answer": "štětec"
-      }
-    },
-    {
-      "id": 17,
-      "de": "der Malkasten",
-      "cz": "vodové barvy / paleta",
-      "image": "images/schulsachen/malkasten.png",
-      "blooket": {
-        "question": "Jak se řekne německy 'vodové barvy'?",
-        "answers": ["der Malkasten", "der Pinsel", "das Buch", "das Heft"],
-        "time_limit": 20,
-        "correct_answer": "der Malkasten"
-      }
-    },
-    {
-      "id": 18,
-      "de": "der Notizblock",
-      "cz": "blok / zápisník",
-      "image": "images/schulsachen/notizblock.png",
-      "blooket": {
-        "question": "Přelož: der Notizblock",
-        "answers": ["blok / zápisník", "sešit", "kniha", "učebnice"],
-        "time_limit": 20,
-        "correct_answer": "blok / zápisník"
-      }
-    }
-  ]
-}
