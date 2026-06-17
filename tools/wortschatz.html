@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wortschatz - Textový Slovníček v1.0</title>
+    <title>Wortschatz v1.0 - Textový Slovníček</title>
     <style>
         :root {
             --primary: #0284c7;
@@ -135,8 +135,8 @@
 
 <div class="container">
     <header>
-        <h1 id="mainTitle">📝 Wortschatz</h1>
-        <p>Export slovíček pro Blooket (CSV) a rychlé kopírování pro Wordwall.</p>
+        <h1 id="mainTitle">📝 Wortschatz v1.0</h1>
+        <p>Export slovíček pro Blooket (CSV s distraktory) a rychlé kopírování pro Wordwall (klíč cz).</p>
     </header>
 
     <div class="card">
@@ -167,7 +167,7 @@
 
     <div class="card">
         <h2>3. Export pro Blooket</h2>
-        <p style="font-size: 0.9rem; margin-top:0;">Vygeneruje čisté CSV připravené pro hromadný import do Blooket setu.</p>
+        <p style="font-size: 0.9rem; margin-top:0;">Vygeneruje kompletní CSV (Question, Answer, Choice 1-4) s náhodně namíchanými špatnými odpověďmi z dané lekce.</p>
         <button class="btn" onclick="exportToBlooketCSV()">📊 Stáhnout Blooket CSV</button>
     </div>
 
@@ -198,7 +198,8 @@
         const key = selectEl.value;
         const titleText = selectEl.options[selectEl.selectedIndex].text;
         
-        document.getElementById('mainTitle').textContent = `📝 Wortschatz - ${titleText.split(' ')[0]}`;
+        // Dynamická úprava hlavního nadpisu s verzí
+        document.getElementById('mainTitle').textContent = `📝 Wortschatz v1.0 - ${titleText.split(' ')[0]}`;
 
         const container = document.getElementById('tableContainer');
         if (container) container.innerHTML = '<span class="loading-text">Načítám data...</span>';
@@ -212,7 +213,7 @@
         try {
             let response = await fetch(primaryUrl);
             if (!response.ok) response = await fetch(backupUrl);
-            if (!response.ok) throw new Error("Soubor s daty nebyl znalezen.");
+            if (!response.ok) throw new Error("Soubor s daty nebyl nalezen.");
 
             const data = await response.json();
             let rawData = data[key] || data.words || data;
@@ -248,7 +249,7 @@
 
         currentWords.forEach(item => {
             const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
-            const czWord = item.cz || ""; // OPRAVENO: z cs na cz
+            const czWord = item.cz || ""; // Opraveno na tvůj klíč "cz"
             
             textLines.push(`${deWord}\t${czWord}`);
             tableHtml += `<tr><td><strong>${deWord}</strong></td><td>${czWord}</td></tr>`;
@@ -283,30 +284,28 @@
     function exportToBlooketCSV() {
         if (currentWords.length === 0) return;
 
-        // Všechny dostupné české překlady pro generování falešných odpovědí
+        // Všechny dostupné české překlady z této lekce pro generování falešných odpovědí
         const allCzAnswers = currentWords.map(item => item.cz || "").filter(txt => txt !== "");
 
-        // Hlavička Blooket šablony pro Multiple Choice
+        // Kompletní Blooket struktura se sloupci Choice 1-4
         let csvLines = ["Question,Answer,Choice 1,Choice 2,Choice 3,Choice 4,Time Limit"];
         
         currentWords.forEach(item => {
             const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
             const correctCz = item.cz || "";
             
-            // Vyfiltrujeme ostatní slovíčka kromě toho správného
+            // Vyfiltrujeme z lekce všechno kromě aktuální správné odpovědi
             let wrongChoices = allCzAnswers.filter(ans => ans !== correctCz);
-            // Zamícháme je a vezmeme první 3 jako distraktory
+            // Náhodně zamícháme zbytek slovíček
             shuffle(wrongChoices);
             
+            // Dosadíme distraktory
             let choice1 = wrongChoices[0] || "";
             let choice2 = wrongChoices[1] || "";
             let choice3 = wrongChoices[2] || "";
-            let choice4 = ""; // Čtvrtou možnost můžeme nechat prázdnou, nebo pokud je dost slovíček, dosadit další
-            if (wrongChoices.length > 3) {
-                choice4 = wrongChoices[3];
-            }
+            let choice4 = wrongChoices[3] || "";
 
-            // Ošetření uvozovek pro bezpečné CSV
+            // Ošetření uvozovek pro bezpečné CSV bez rozpadu řádků
             const escapeCsv = (str) => `"${str.replace(/"/g, '""')}"`;
 
             const q = escapeCsv(deWord);
@@ -320,7 +319,7 @@
             csvLines.push(`${q},${a},${c1},${c2},${c3},${c4},${timeLimit}`);
         });
 
-        // Spojení řádků s BOM pro správné kódování češtiny v Excelu/Blooketu
+        // Přidání UTF-8 BOM (\uFEFF) aby Excel i Blooket správně pobraly české znaky (ě, š, č, ř, ž...)
         const csvContent = "\uFEFF" + csvLines.join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         
