@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor Obrázkového Slovníčku v6</title>
+    <title>Generátor Obrázkového Slovníčku</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -202,6 +202,22 @@
             text-overflow: ellipsis;
         }
 
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -220,7 +236,7 @@
 <div class="container">
     <header>
         <h1>🖼️ Bildwörterbuch - Obrázkový slovníček</h1>
-        <p>Generátor pracovních listů A5 (2x na A4) s výběrem rozsahu slovíček podle ID z JSON repozitáře.</p>
+        <p>Generátor pracovních listů A5 (2x na A4 na šířku) s inteligentním procvičováním členů a filtrováním ID.</p>
     </header>
 
     <div class="grid">
@@ -229,7 +245,16 @@
             <div class="grid" style="grid-template-columns: 2fr 1.5fr 2fr; gap: 20px;">
                 <div class="form-group">
                     <label for="themeSelect">Zvolit téma:</label>
-                    <select id="themeSelect" onchange="loadTheme()"></select>
+                    <select id="themeSelect" onchange="loadTheme()">
+                        <option value="schulsachen">Schulsachen (Pomůcky)</option>
+                        <option value="familie">Familie (Rodina)</option>
+                        <option value="berufe">Berufe (Povolání)</option>
+                        <option value="hobbys">Hobbys (Záliby)</option>
+                        <option value="sport">Sportarten (Sporty)</option>
+                        <option value="wochentage">Wochentage (Dny v týdnu)</option>
+                        <option value="essen">Essen (Jídlo)</option>
+                        <option value="stundenplan">Stundenplan / Monate</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Rozsah ID slovíček:</label>
@@ -256,7 +281,7 @@
             <div class="form-group">
                 <label id="listLabel">Slovíčka vybraná k tisku:</label>
                 <div id="wordsContainer" class="word-list">
-                    <span class="loading-text">Vyberte téma...</span>
+                    <span class="loading-text">Načítám data...</span>
                 </div>
             </div>
         </div>
@@ -285,81 +310,95 @@
 </div>
 
 <script>
-    const themes = [
-        { id: "schulsachen", name: "Schulsachen (Pomůcky)" },
-        { id: "familie", name: "Familie (Rodina)" },
-        { id: "berufe", name: "Berufe (Povolání)" },
-        { id: "hobbys", name: "Hobbys (Záliby)" },
-        { id: "sport", name: "Sportarten (Sporty)" },
-        { id: "wochentage", name: "Wochentage (Dny v týdnu)" },
-        { id: "essen", name: "Essen (Jídlo)" },
-        { id: "stundenplan", name: "Stundenplan / Monate" }
-    ];
+    let allFetchedItems = []; 
+    let activeItems = [];     
+    let activeImages = [];    
 
-    let allFetchedItems = []; // Kompletní data z JSONu
-    let activeWords = [];     // Vyfiltrovaná slova pro zobrazení/tisk
-    let activeImages = [];    // Vyfiltrované obrázky pro zobrazení/tisk
-
-    window.onload = function() {
-        populateSelect();
+    document.addEventListener("DOMContentLoaded", function() {
         loadTheme();
-    };
-
-    function populateSelect() {
-        const select = document.getElementById('themeSelect');
-        select.innerHTML = '';
-        themes.forEach(theme => {
-            let opt = document.createElement('option');
-            opt.value = theme.id;
-            opt.textContent = theme.name;
-            select.appendChild(opt);
-        });
-    }
+    });
 
     function loadTheme() {
-        const key = document.getElementById('themeSelect').value;
-        const container = document.getElementById('wordsContainer');
-        container.innerHTML = '<span class="loading-text">Načítám data z repozitáře...</span>';
+        const selectEl = document.getElementById('themeSelect');
+        if (!selectEl) return;
+        const key = selectEl.value;
         
-        fetch(`../data/${key}.json`)
-            .then(response => {
-                if (!response.ok) throw new Error('Soubor JSON nebyl nalezen');
-                return response.json();
-            })
-            .then(data => {
-                const firstKey = Object.keys(data)[0];
-                allFetchedItems = data[firstKey] || [];
-
-                if (allFetchedItems.length > 0) {
-                    // Zjistíme min a max ID v souboru a nastavíme výchozí rozsah
-                    const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
-                    const minId = ids.length ? Math.min(...ids) : 1;
-                    const maxId = ids.length ? Math.max(...ids) : 10;
-
-                    document.getElementById('idFrom').value = minId;
-                    document.getElementById('idTo').value = Math.min(minId + 8, maxId); // Výchozí bezpečný tisk cca 9 slovíček
+        const container = document.getElementById('wordsContainer');
+        if (container) {
+            container.innerHTML = '<span class="loading-text">Načítám slovíčka ze složky /data/...</span>';
+        }
+        
+        // OPRAVENÁ relativní cesta jdoucí správně do složky data/
+        const urls = [`../data/${key}.json`, `../${key}.json`];
+        
+        function fetchSequence(index) {
+            if (index >= urls.length) {
+                if (container) {
+                    container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Soubor ${key}.json nebyl nalezen ve složce /data/ ani v rootu.</span>`;
                 }
+                return;
+            }
+            
+            fetch(urls[index])
+                .then(response => {
+                    if (!response.ok) throw new Error("HTTP error " + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    let rawData = data[key] || data.words || data;
+                    
+                    if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
+                        const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                        if (firstKey) {
+                            allFetchedItems = rawData[firstKey];
+                        } else {
+                            allFetchedItems = Object.values(rawData).find(v => Array.isArray(v)) || [];
+                        }
+                    } else if (Array.isArray(rawData)) {
+                        allFetchedItems = rawData;
+                    } else {
+                        allFetchedItems = [];
+                    }
 
-                filterWords();
-            })
-            .catch(error => {
-                console.error(error);
-                container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Nepodařilo se načíst data pro: ../data/${key}.json</span>`;
-            });
+                    if (allFetchedItems.length > 0) {
+                        const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
+                        const minId = ids.length ? Math.min(...ids) : 1;
+                        const maxId = ids.length ? Math.max(...ids) : 10;
+
+                        const fromEl = document.getElementById('idFrom');
+                        const toEl = document.getElementById('idTo');
+                        if (fromEl) fromEl.value = minId;
+                        if (toEl) toEl.value = Math.min(minId + 8, maxId); 
+                    }
+                    
+                    filterWords();
+                })
+                .catch((err) => {
+                    console.warn(`Pokus ${index + 1} selhal:`, err);
+                    fetchSequence(index + 1);
+                });
+        }
+        
+        fetchSequence(0);
     }
 
     function filterWords() {
-        const fromId = parseInt(document.getElementById('idFrom').value) || 1;
-        const toId = parseInt(document.getElementById('idTo').value) || 99;
+        if (!Array.isArray(allFetchedItems)) {
+            allFetchedItems = [];
+        }
 
-        // Filtrace položek, které spadají do zadaného rozsahu ID
-        const filtered = allFetchedItems.filter(item => {
+        const fromEl = document.getElementById('idFrom');
+        const toEl = document.getElementById('idTo');
+        const fromId = fromEl ? (parseInt(fromEl.value) || 1) : 1;
+        const toId = toEl ? (parseInt(toEl.value) || 99) : 99;
+
+        activeItems = allFetchedItems.filter(item => {
+            if (!item) return false;
             const itemId = parseInt(item.id);
             return itemId >= fromId && itemId <= toId;
         });
 
-        activeWords = filtered.map(item => item.de || "");
-        activeImages = filtered.map(item => {
+        activeImages = activeItems.map(item => {
             if (item.image) {
                 return item.image.startsWith('images/') ? `../${item.image}` : item.image;
             }
@@ -372,25 +411,26 @@
 
     function renderWordInputs() {
         const container = document.getElementById('wordsContainer');
+        if (!container) return;
         container.innerHTML = '';
         
-        if(activeWords.length === 0) {
-            container.innerHTML = '<span class="loading-text" style="color: #f59e0b;">⚠️ V tomto rozsahu ID nebyla nalezena žádná slovíčka.</span>';
+        if (activeItems.length === 0) {
+            container.innerHTML = '<span class="loading-text">⚠️ Žádná slovíčka v tomto rozsahu ID.</span>';
             return;
         }
 
-        activeWords.forEach((word, index) => {
+        activeItems.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'word-item';
             
             const label = document.createElement('span');
-            label.textContent = `ID #${allFetchedItems.find(item => item.de === word)?.id || index+1}:`;
+            label.textContent = `ID #${item.id || index + 1}:`;
             label.style.fontWeight = 'bold';
             label.style.minWidth = '50px';
 
             const imgInput = document.createElement('input');
             imgInput.type = 'text';
-            imgInput.value = activeImages[index];
+            imgInput.value = activeImages[index] || '';
             imgInput.style.width = '240px';
             imgInput.oninput = function() {
                 activeImages[index] = this.value;
@@ -399,9 +439,16 @@
 
             const input = document.createElement('input');
             input.type = 'text';
-            input.value = word;
+            input.value = item.artikel ? `${item.artikel} ${item.de}` : (item.de || '');
             input.oninput = function() {
-                activeWords[index] = this.value;
+                const parts = this.value.split(' ');
+                if (parts.length > 1 && ['der', 'die', 'das'].includes(parts[0].toLowerCase())) {
+                    activeItems[index].artikel = parts[0];
+                    activeItems[index].de = parts.slice(1).join(' ');
+                } else {
+                    activeItems[index].artikel = '';
+                    activeItems[index].de = this.value;
+                }
                 updatePreview();
             };
             
@@ -412,27 +459,35 @@
         });
     }
 
-    function formatPracticeWord(word) {
-        return word.split(' ').map(part => {
+    function formatPracticeItem(item) {
+        if (!item) return "";
+        if (item.artikel && item.de) {
+            let hiddenArtikel = "_ ".repeat(item.artikel.length).trim();
+            let word = item.de;
+            let hiddenWord = word[0] + word.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
+            return `${hiddenArtikel}   ${hiddenWord}`; 
+        } 
+        let fullWord = item.de || "";
+        return fullWord.split(' ').map(part => {
             if (part.length <= 1) return part;
-            let first = part[0];
-            let rest = part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
-            return first + rest;
+            return part[0] + part.slice(1).replace(/[a-zA-Záéíóúýčďěňřšťžů🫵]/g, '_');
         }).join(' ');
     }
 
     function updatePreview() {
         const selectEl = document.getElementById('themeSelect');
-        if (!selectEl.options.length || activeWords.length === 0) return;
+        if (!selectEl || !selectEl.options.length || activeItems.length === 0) return;
         
         const titleText = selectEl.options[selectEl.selectedIndex].text;
-        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const modeEl = document.querySelector('input[name="mode"]:checked');
+        const mode = modeEl ? modeEl.value : 'portfolio';
 
         function fillGrid(gridId) {
             const grid = document.getElementById(gridId);
+            if (!grid) return;
             grid.innerHTML = '';
             
-            activeWords.forEach((word, idx) => {
+            activeItems.forEach((item, idx) => {
                 const box = document.createElement('div');
                 box.className = 'vocab-box';
                 
@@ -440,18 +495,17 @@
                 imgPlace.className = 'vocab-image-place';
                 
                 const imgEl = document.createElement('img');
-                imgEl.src = activeImages[idx];
+                imgEl.src = activeImages[idx] || `../images/unknown.png`;
                 imgEl.onerror = function() {
                     this.style.display = 'none';
                     imgPlace.textContent = '🖼️ Chybí';
                     imgPlace.style.fontSize = '0.7rem';
-                    imgPlace.style.color = '#94a3b8';
                 };
                 imgPlace.appendChild(imgEl);
                 
                 const wordDiv = document.createElement('div');
                 wordDiv.className = 'vocab-word';
-                wordDiv.textContent = (mode === 'portfolio') ? word : formatPracticeWord(word);
+                wordDiv.textContent = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : (item.de || '')) : formatPracticeItem(item);
                 
                 box.appendChild(imgPlace);
                 box.appendChild(wordDiv);
@@ -462,8 +516,10 @@
         fillGrid('gridLeft');
         fillGrid('gridRight');
         
-        document.getElementById('previewLeft').querySelector('.preview-page-title').textContent = `Žák 1 (A5) - ${titleText}`;
-        document.getElementById('previewRight').querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
+        const pLeft = document.getElementById('previewLeft');
+        const pRight = document.getElementById('previewRight');
+        if (pLeft) pLeft.querySelector('.preview-page-title').textContent = `Žák 1 (A5) - ${titleText}`;
+        if (pRight) pRight.querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
     }
 
     function loadImage(url) {
@@ -476,12 +532,14 @@
     }
 
     async function generatePDF() {
+        if (activeItems.length === 0) return;
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         
         const selectEl = document.getElementById('themeSelect');
-        const titleText = selectEl.options[selectEl.selectedIndex].text;
-        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const titleText = selectEl ? selectEl.options[selectEl.selectedIndex].text : "Slovníček";
+        const modeEl = document.querySelector('input[name="mode"]:checked');
+        const mode = modeEl ? modeEl.value : 'portfolio';
         const halfWidth = 297 / 2;
 
         const loadedImages = [];
@@ -494,9 +552,6 @@
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(14);
             doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
-            
-            doc.setFont("Helvetica", "italic");
-            doc.setFontSize(10);
             doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
             
             const startX = offsetX + 10;
@@ -506,19 +561,14 @@
             const boxHeight = 28;
             const gap = 4;
             
-            activeWords.forEach((word, idx) => {
+            activeItems.forEach((item, idx) => {
                 const r = Math.floor(idx / cols);
                 const c = idx % cols;
-                
                 const x = startX + (c * (boxWidth + gap));
                 const y = startY + (r * (boxHeight + gap));
                 
                 doc.setLineWidth(0.3);
-                doc.setDrawColor(0);
                 doc.rect(x, y, boxWidth, boxHeight);
-                
-                doc.setLineWidth(0.1);
-                doc.setDrawColor(180);
                 doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
                 
                 const img = loadedImages[idx];
@@ -527,33 +577,17 @@
                     const maxH = boxHeight - 11;
                     let imgW = maxW;
                     let imgH = (img.height / img.width) * imgW;
-                    
                     if (imgH > maxH) {
                         imgH = maxH;
                         imgW = (img.width / img.height) * imgH;
                     }
-                    
-                    const imgX = x + 1.5 + (maxW - imgW) / 2;
-                    const imgY = y + 1.5 + (maxH - imgH) / 2;
-                    
-                    try {
-                        doc.addImage(img, 'PNG', imgX, imgY, imgW, imgH);
-                    } catch (e) {
-                        console.error(e);
-                    }
-                } else {
-                    doc.setFont("Helvetica", "normal");
-                    doc.setFontSize(7);
-                    doc.text("Bild fehlt", x + 14, y + 10);
+                    doc.addImage(img, 'PNG', x + 1.5 + (maxW - imgW)/2, y + 1.5 + (maxH - imgH)/2, imgW, imgH);
                 }
 
                 doc.setFont("Helvetica", "bold");
                 doc.setFontSize(9.5);
-                
-                let displayText = (mode === 'portfolio') ? word : formatPracticeWord(word);
-                const textWidth = doc.getTextWidth(displayText);
-                const textX = x + (boxWidth - textWidth) / 2;
-                doc.text(displayText, textX, y + boxHeight - 2.5);
+                let displayText = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : item.de) : formatPracticeItem(item);
+                doc.text(displayText, x + (boxWidth - doc.getTextWidth(displayText)) / 2, y + boxHeight - 2.5);
             });
             
             doc.setFont("Helvetica", "normal");
@@ -563,13 +597,7 @@
         }
 
         drawHalf(0);
-        
-        doc.setLineWidth(0.2);
-        doc.setDrawColor(120);
-        doc.setLineDashPattern([2, 2], 0);
         doc.line(halfWidth, 0, halfWidth, 210);
-        doc.setLineDashPattern([], 0);
-        
         drawHalf(halfWidth);
 
         doc.save(`obrazkovy-slovnicek-ID-${mode}.pdf`);
