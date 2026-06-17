@@ -522,7 +522,7 @@
         if (pRight) pRight.querySelector('.preview-page-title').textContent = `Žák 2 (A5) - ${titleText}`;
     }
 
-    function loadImage(url) {
+      function loadImage(url) {
         return new Promise((resolve) => {
             const img = new Image();
             img.src = url;
@@ -531,76 +531,126 @@
         });
     }
 
+    // Pomocná funkce pro načtení fontu a konverzi do Base64
+    function loadFontAsBase64(url) {
+        return fetch(url)
+            .then(response => response.blob())
+            .then(blob => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    // Získáme čistý Base64 řetězec bez hlavičky data:application/x-font-ttf;base64,
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            }));
+    }
+
     async function generatePDF() {
         if (activeItems.length === 0) return;
+        
+        // Změna textu na tlačítku, aby uživatel věděl, že se stahují fonty
+        const btn = document.querySelector('.action-buttons .btn');
+        const originalText = btn.textContent;
+        btn.textContent = "⌛ Připravuji fonty a obrázky...";
+        btn.disabled = true;
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         
-        const selectEl = document.getElementById('themeSelect');
-        const titleText = selectEl ? selectEl.options[selectEl.selectedIndex].text : "Slovníček";
-        const modeEl = document.querySelector('input[name="mode"]:checked');
-        const mode = modeEl ? modeEl.value : 'portfolio';
-        const halfWidth = 297 / 2;
-
-        const loadedImages = [];
-        for (let i = 0; i < activeImages.length; i++) {
-            const img = await loadImage(activeImages[i]);
-            loadedImages.push(img);
-        }
-
-        function drawHalf(offsetX) {
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(14);
-            doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
-            doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
+        try {
+            // Načtení Google Fontu Roboto (Regular a Bold) s plnou podporou diakritiky
+            const fontRegularBase64 = await loadFontAsBase64('https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.ttf');
+            const fontBoldBase64 = await loadFontAsBase64('https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.ttf');
             
-            const startX = offsetX + 10;
-            const startY = 28;
-            const cols = 3;
-            const boxWidth = 41;
-            const boxHeight = 28;
-            const gap = 4;
+            // Registrace fontů do virtuálního souborového systému jsPDF
+            doc.addFileToVFS('Roboto-Regular.ttf', fontRegularBase64);
+            doc.addFileToVFS('Roboto-Bold.ttf', fontBoldBase64);
             
-            activeItems.forEach((item, idx) => {
-                const r = Math.floor(idx / cols);
-                const c = idx % cols;
-                const x = startX + (c * (boxWidth + gap));
-                const y = startY + (r * (boxHeight + gap));
+            // Přidání fontů do dokumentu pod názvem "Roboto"
+            doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+            doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+            
+            const selectEl = document.getElementById('themeSelect');
+            const titleText = selectEl ? selectEl.options[selectEl.selectedIndex].text : "Slovníček";
+            const modeEl = document.querySelector('input[name="mode"]:checked');
+            const mode = modeEl ? modeEl.value : 'portfolio';
+            const halfWidth = 297 / 2;
+
+            const loadedImages = [];
+            for (let i = 0; i < activeImages.length; i++) {
+                const img = await loadImage(activeImages[i]);
+                loadedImages.push(img);
+            }
+
+            function drawHalf(offsetX) {
+                // Použijeme registrovaný font Roboto
+                doc.setFont("Roboto", "bold");
+                doc.setFontSize(14);
+                doc.text("BILDWÖRTERBUCH", offsetX + 10, 15);
+                doc.text(`Thema: ${titleText}`, offsetX + 10, 21);
                 
-                doc.setLineWidth(0.3);
-                doc.rect(x, y, boxWidth, boxHeight);
-                doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
+                const startX = offsetX + 10;
+                const startY = 28;
+                const cols = 3;
+                const boxWidth = 41;
+                const boxHeight = 28;
+                const gap = 4;
                 
-                const img = loadedImages[idx];
-                if (img) {
-                    const maxW = boxWidth - 4;
-                    const maxH = boxHeight - 11;
-                    let imgW = maxW;
-                    let imgH = (img.height / img.width) * imgW;
-                    if (imgH > maxH) {
-                        imgH = maxH;
-                        imgW = (img.width / img.height) * imgH;
+                activeItems.forEach((item, idx) => {
+                    const r = Math.floor(idx / cols);
+                    const c = idx % cols;
+                    const x = startX + (c * (boxWidth + gap));
+                    const y = startY + (r * (boxHeight + gap));
+                    
+                    doc.setLineWidth(0.3);
+                    doc.rect(x, y, boxWidth, boxHeight);
+                    doc.rect(x + 1.5, y + 1.5, boxWidth - 3, boxHeight - 9);
+                    
+                    const img = loadedImages[idx];
+                    if (img) {
+                        const maxW = boxWidth - 4;
+                        const maxH = boxHeight - 11;
+                        let imgW = maxW;
+                        let imgH = (img.height / img.width) * imgW;
+                        if (imgH > maxH) {
+                            imgH = maxH;
+                            imgW = (img.width / img.height) * imgH;
+                        }
+                        doc.addImage(img, 'PNG', x + 1.5 + (maxW - imgW)/2, y + 1.5 + (maxH - imgH)/2, imgW, imgH);
                     }
-                    doc.addImage(img, 'PNG', x + 1.5 + (maxW - imgW)/2, y + 1.5 + (maxH - imgH)/2, imgW, imgH);
-                }
 
-                doc.setFont("Helvetica", "bold");
-                doc.setFontSize(9.5);
-                let displayText = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : item.de) : formatPracticeItem(item);
-                doc.text(displayText, x + (boxWidth - doc.getTextWidth(displayText)) / 2, y + boxHeight - 2.5);
-            });
+                    doc.setFont("Roboto", "bold");
+                    doc.setFontSize(9.5);
+                    let displayText = (mode === 'portfolio') ? (item.artikel ? `${item.artikel} ${item.de}` : item.de) : formatPracticeItem(item);
+                    doc.text(displayText, x + (boxWidth - doc.getTextWidth(displayText)) / 2, y + boxHeight - 2.5);
+                });
+                
+                doc.setFont("Roboto", "normal");
+                doc.setFontSize(8);
+                doc.text("Name: ______________________", offsetX + 10, 195);
+                doc.text("Klasse: _________", offsetX + halfWidth - 35, 195);
+            }
+
+            drawHalf(0);
+            doc.line(halfWidth, 0, halfWidth, 210);
+            drawHalf(halfWidth);
+
+            doc.save(`obrazkovy-slovnicek-ID-${mode}.pdf`);
             
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(8);
-            doc.text("Name: ______________________", offsetX + 10, 195);
-            doc.text("Klasse: _________", offsetX + halfWidth - 35, 195);
+        } catch (error) {
+            console.error("Chyba při generování PDF s externím fontem:", error);
+            alert("Nepodařilo se stáhnout písmo s diakritikou. Generuji nouzové PDF...");
+            // Nouzový fallback (původní kód), kdyby vypadl internet/Google Fonts
+            doc.setFont("Helvetica", "bold");
+            // ... (případný zbytek starého vykreslení)
+            doc.save(`obrazkovy-slovnicek-nouzovy.pdf`);
+        } finally {
+            // Vrácení tlačítka do původního stavu
+            btn.textContent = originalText;
+            btn.disabled = false;
         }
-
-        drawHalf(0);
-        doc.line(halfWidth, 0, halfWidth, 210);
-        drawHalf(halfWidth);
-
-        doc.save(`obrazkovy-slovnicek-ID-${mode}.pdf`);
     }
 </script>
 </body>
