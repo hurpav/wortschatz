@@ -328,28 +328,26 @@
             container.innerHTML = '<span class="loading-text">Načítám slovíčka ze složky /data/...</span>';
         }
         
-        // Primárně složka data/, jako nouzovka root
+        // OPRAVENÁ relativní cesta jdoucí správně do složky data/
         const urls = [`../data/${key}.json`, `../${key}.json`];
         
         function fetchSequence(index) {
             if (index >= urls.length) {
                 if (container) {
-                    container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Soubor ${key}.json nebyl nalezen v /data/ ani v rootu.</span>`;
+                    container.innerHTML = `<span class="loading-text" style="color: #ef4444;">❌ Soubor ${key}.json nebyl nalezen ve složce /data/ ani v rootu.</span>`;
                 }
                 return;
             }
             
             fetch(urls[index])
                 .then(response => {
-                    if (!response.ok) throw new Error();
+                    if (!response.ok) throw new Error("HTTP error " + response.status);
                     return response.json();
                 })
                 .then(data => {
-                    // OŠETŘENÍ CHYBY: Bezpečně vytáhneme pole, ať už se jmenuje jakkoliv
                     let rawData = data[key] || data.words || data;
                     
                     if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
-                        // Pokud je to objekt, zkusíme najít jakékoliv pole uvnitř něj
                         const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
                         if (firstKey) {
                             allFetchedItems = rawData[firstKey];
@@ -375,7 +373,8 @@
                     
                     filterWords();
                 })
-                .catch(() => {
+                .catch((err) => {
+                    console.warn(`Pokus ${index + 1} selhal:`, err);
                     fetchSequence(index + 1);
                 });
         }
