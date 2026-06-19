@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Centrální Generátor Domina z GitHub Databáze v2.0</title>
+    <title>Centrální Generátor Domina z GitHub Databáze v2.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #f0f4f8; padding: 20px; color: #333; }
@@ -22,7 +22,7 @@
 <body>
 
 <div class="container">
-    <h1>🎲 Obrázkové Domino v2.0 (16 Unikátních Kartiček)</h1>
+    <h1>🎲 Obrázkové Domino v2.1 (Kořenová složka /images/)</h1>
     
     <div class="setup-box">
         <div>
@@ -47,7 +47,7 @@
         </a>
     </div>
 
-    <h3>Kompletní výpis slovíček v databázi (Do PDF se vybere prvních 16):</h3>
+    <h3>Kompletní výpis slovíček v databázi:</h3>
     <table>
         <thead>
             <tr>
@@ -69,8 +69,12 @@
 
     let loadedWords = [];
     let currentTitle = "";
+    let currentFolder = ""; 
 
-    // Bezpečné navázání eventů po načtení stránky, aby nevznikal ReferenceError
+    function odstranDiakritiku(text) {
+        return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("themeSelect").addEventListener("change", loadDataFromGitHub);
         document.getElementById("generateBtn").addEventListener("click", generatePDF);
@@ -84,6 +88,7 @@
         if (!filename) return;
 
         status.innerText = "🔄 Stahuji data z GitHubu...";
+        currentFolder = filename.replace('.json', ''); 
 
         const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/data/${filename}?_ts=` + new Date().getTime();
 
@@ -92,9 +97,8 @@
             if (!response.ok) throw new Error("Soubor se nepodařilo ve složce /data/ najít.");
             
             const data = await response.json();
-            const key = filename.replace('.json', '');
             
-            let rawData = data[key] || data.words || data.slovicka || data;
+            let rawData = data[currentFolder] || data.words || data.slovicka || data;
             if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
                 const foundKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
                 loadedWords = foundKey ? rawData[foundKey] : [];
@@ -104,7 +108,7 @@
                 loadedWords = [];
             }
             
-            currentTitle = data.title || data.theme || key;
+            currentTitle = data.title || data.theme || currentFolder;
 
             if (loadedWords.length === 0) {
                 throw new Error("V JSONu nebyla nalezena žádná slovíčka.");
@@ -117,7 +121,7 @@
                     <td style="color: #7f8c8d; font-size: 14px;">${index + 1}</td>
                     <td><strong>${deWord}</strong></td>
                     <td>${word.cz || ''}</td>
-                    <td><code>${word.image || ''}</code></td>
+                    <td><code>images/${currentFolder}/${word.image || ''}</code></td>
                 </tr>`;
             });
             document.getElementById("vocabTable").innerHTML = html;
@@ -132,8 +136,10 @@
 
     function toDataURL(url) {
         return new Promise((resolve, reject) => {
+            // OPRAVA CESTY: Směřujeme přímo do hlavní složky /images/ (vynecháváme /data/)
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/data/${url}`;
+                let cleanImgPath = url.replace(/^images\//, '').replace(/^data\//, '');
+                url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/images/${currentFolder}/${cleanImgPath}`;
             }
 
             const img = new Image();
@@ -160,9 +166,17 @@
     }
 
     async function generatePDF() {
-        const activeWords = loadedWords.slice(0, 16);
-        if (activeWords.length < 16) {
-            alert(`Máte v databázi pouze ${activeWords.length} slovíček. Pro plnou mřížku 16 unikátních karet jich potřebujete alespoň 16!`);
+        if (loadedWords.length === 0) {
+            alert("Nejprve vyberte téma a načtěte slovíčka!");
+            return;
+        }
+
+        // Ochrana: Vezmeme maximálně 16 slovíček, nebo méně, pokud jich v JSONu víc není
+        const maxCards = Math.min(loadedWords.length, 16);
+        const activeWords = loadedWords.slice(0, maxCards);
+
+        if (maxCards < 4) {
+            alert("Pro vygenerování domina potřebujete alespoň 4 slovíčka.");
             return;
         }
 
@@ -171,12 +185,14 @@
 
         doc.setFont("Courier", "normal");
         doc.setFontSize(16);
-        doc.text(`OBRÁZKOVÉ DOMINO: ${currentTitle.toUpperCase()}`, 148, 14, { align: "center" });
+        
+        const cistyTitul = odstranDiakritiku(currentTitle.toUpperCase());
+        doc.text(`OBRAZKOVE DOMINO: ${cistyTitul}`, 148, 14, { align: "center" });
 
-        // Generování 16 unikátních propojených karet
+        // Sestavení karet do uzavřeného kruhu bez duplicit
         let dominoCards = [];
-        for (let i = 0; i < 16; i++) {
-            let next = (i === 15) ? activeWords[0] : activeWords[i + 1];
+        for (let i = 0; i < maxCards; i++) {
+            let next = (i === maxCards - 1) ? activeWords[0] : activeWords[i + 1];
             
             dominoCards.push({ 
                 leftText: activeWords[i].cz || '', 
@@ -185,6 +201,7 @@
             });
         }
 
+        // Mřížka (4 sloupce)
         const cardWidth = 68;   
         const cardHeight = 35;  
         const startX = 14;      
@@ -205,11 +222,12 @@
             doc.line(x + cardWidth / 2, y, x + cardWidth / 2, y + cardHeight);
             doc.setLineDashPattern([], 0);
 
-            // LEVÁ STRANA
+            // LEVÁ STRANA (Čeština)
             doc.setFontSize(8).setTextColor(90);
             const maxHalfWidth = (cardWidth / 2) - 5;
             
-            let splitLeftText = doc.splitTextToSize(card.leftText, maxHalfWidth);
+            let textBezDiakritiky = odstranDiakritiku(card.leftText);
+            let splitLeftText = doc.splitTextToSize(textBezDiakritiky, maxHalfWidth);
             doc.text(splitLeftText, x + (cardWidth / 4), y + 4, { align: "center", baseline: "top" });
 
             if (card.leftImg) {
@@ -224,7 +242,7 @@
                 }
             }
 
-            // PRAVÁ STRANA
+            // PRAVÁ STRANA (Němčina)
             doc.setFontSize(9).setTextColor(0);
             const splitRightText = doc.splitTextToSize(card.rightText, maxHalfWidth); 
             doc.text(splitRightText, x + (cardWidth * 0.75), y + (cardHeight / 2), { align: "center", baseline: "middle" });
@@ -235,9 +253,10 @@
         }
 
         doc.setFontSize(8).setTextColor(150);
-        doc.text("Vytiskněte a rozstříhejte podle plných vnějších čar. Karty tvoří uzavřený kruh o 16 prvcích.", 148, 195, { align: "center" });
+        doc.text(`Vytisknete a rozstrihejte podle plnych vnejsich car. Karty tvori uzavreny kruh o ${maxCards} prvcich.`, 148, 195, { align: "center" });
 
-        doc.save(`domino-${currentTitle.toLowerCase().replace(/[^a-z0-9]/g, "_")}.pdf`);
+        const bezpecnyNazev = odstranDiakritiku(currentTitle.toLowerCase()).replace(/[^a-z0-9]/g, "_");
+        doc.save(`domino-${bezpecnyNazev}.pdf`);
     }
 </script>
 
