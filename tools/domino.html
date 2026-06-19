@@ -156,82 +156,140 @@
     }
 
     async function generatePDF() {
-        const activeWords = loadedWords.slice(0, 8);
-        if (activeWords.length < 8) {
+        if (loadedWords.length < 8) {
             alert("Potřebujete alespoň 8 slovíček pro vygenerování kompletní sady domina!");
             return;
         }
 
         const { jsPDF } = window.jspdf;
+        // Formát na šířku (landscape)
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-        doc.setFont("Courier", "normal");
-        doc.setFontSize(16);
-        doc.text(`DOMINO: ${currentTitle.toUpperCase()}`, 148, 15, { align: "center" });
+        doc.setFont("Courier", "normal"); // Stabilní vestavěný font
 
-        // Generování kompletního uzavřeného kruhu (16 karet pro 8 slovíček)
+        // Hlavní nadpisy nahoře na stránce
+        doc.setFontSize(16);
+        doc.setTextColor(40, 40, 40);
+        doc.text("DOMINO - DEUTSCH", 148, 14, { align: "center" });
+        doc.setFontSize(11);
+        doc.text(`Thema: ${currentTitle}`, 148, 20, { align: "center" });
+
+        // Výpočet uzavřené herní smyčky pro 16 karet (pro 8 slovíček)
         let dominoCards = [];
         for (let i = 0; i < 8; i++) {
-            let prev = (i === 0) ? activeWords[7] : activeWords[i - 1];
-            let next = (i === 7) ? activeWords[0] : activeWords[i + 1];
+            // Karta A: Čeština/Obrázek (předchozí) -> Němčina (aktuální)
+            let prev = (i === 0) ? loadedWords[7] : loadedWords[i - 1];
+            let rawLeftTextA = prev.cz || '';
+            let rightTextA = loadedWords[i].de || '';
             
-            // Karta A: Předchozí CZ/Obrázek -> Aktuální DE
+            // Očištění textu: zbavení se případných hvězdiček nebo označení (např. "🫵")
+            let leftTextA = rawLeftTextA.replace(/[*🫵]/g, '');
+            
             dominoCards.push({ 
-                leftText: prev.cz || '', 
-                leftImg: prev.image || prev.img || '', 
-                rightText: activeWords[i].artikel ? `${activeWords[i].artikel} ${activeWords[i].de}` : (activeWords[i].de || '')
+                leftText: leftTextA, 
+                leftImg: prev.image || '', 
+                rightText: rightTextA 
             });
             
-            // Karta B: Aktuální CZ/Obrázek -> Následující DE
+            // Karta B: Čeština/Obrázek (aktuální) -> Němčina (následující)
+            let rawLeftTextB = loadedWords[i].cz || '';
+            let rightTextB = (i === 7) ? loadedWords[0].de : loadedWords[i + 1].de;
+            
+            // Očištění textu: zbavení se případných hvězdiček nebo označení
+            let leftTextB = rawLeftTextB.replace(/[*🫵]/g, '');
+            
             dominoCards.push({ 
-                leftText: activeWords[i].cz || '', 
-                leftImg: activeWords[i].image || activeWords[i].img || '', 
-                rightText: next.artikel ? `${next.artikel} ${next.de}` : (next.de || '')
+                leftText: leftTextB, 
+                leftImg: loadedWords[i].image || '', 
+                rightText: rightTextB 
             });
         }
 
+        // Rozměry mřížky (4 sloupce x 4 řady = 16 velkých kartiček na celou A4)
         const cardWidth = 68;   
         const cardHeight = 35;  
         const startX = 14;      
-        const startY = 25;      
+        const startY = 28;      
         const gapX = 3;         
-        const gapY = 5;         
+        const gapY = 6;         
 
+        // --- Postupné vykreslení všech 16 kartiček ---
         for (let index = 0; index < dominoCards.length; index++) {
             let card = dominoCards[index];
             let col = index % 4;
             let row = Math.floor(index / 4); 
+
             let x = startX + col * (cardWidth + gapX);
             let y = startY + row * (cardHeight + gapY);
 
-            doc.setDrawColor(0).setLineWidth(0.4).setFillColor(255, 255, 255).rect(x, y, cardWidth, cardHeight, "FD");
-            
-            doc.setDrawColor(150).setLineWidth(0.2).setLineDashPattern([1, 1], 0);
+            // 1. Silný vnější ořezový rámeček
+            doc.setDrawColor(30, 30, 30);
+            doc.setLineWidth(0.4);
+            doc.setFillColor(255, 255, 255);
+            doc.rect(x, y, cardWidth, cardHeight, "FD");
+
+            // 2. Vnitřní přerušovaná dělící čára (střed)
+            doc.setDrawColor(120, 120, 120);
+            doc.setLineWidth(0.2);
+            doc.setLineDashPattern([1.5, 1.5], 0);
             doc.line(x + cardWidth / 2, y, x + cardWidth / 2, y + cardHeight);
-            doc.setLineDashPattern([], 0);
+            doc.setLineDashPattern([], 0); 
 
-            doc.setFontSize(8).setTextColor(80);
-            let splitLeftText = doc.splitTextToSize(card.leftText, 26);
-            doc.text(splitLeftText, x + 17, y + 4, { align: "center", baseline: "top" });
+            // 3. Levá strana karty (Český text + Obrázek)
+            
+            // --- VYLEPŠENÉ ZALOMENÍ TEXTU ---
+            doc.setFontSize(8); // Trochu menší font, aby se text lépe vešel
+            doc.setTextColor(100); // Šedý odstín pro český text
 
+            // Definujeme maximální šířku pro text (šířka poloviny karty - okraje)
+            const maxTextWidth = (cardWidth / 2) - 4; 
+            
+            // Použijeme splitTextToSize pro inteligentní zalomení textu
+            let splitText = doc.splitTextToSize(card.leftText, maxTextWidth);
+            
+            // Text vypíšeme nahoře na kartě
+            doc.text(splitText, x + 3, y + 4, { baseline: "top" });
+
+            // Pokud má karta obrázek, pokusíme se ho vykreslit
             if (card.leftImg) {
                 try {
-                    const imgData = await toDataURL(card.leftImg);
-                    const imgSize = 18; 
-                    const imgX = x + (34 - imgSize) / 2; 
-                    const imgY = y + 13; 
+                    // Převedeme cestu na plnou URL a stáhneme
+                    const fullImgUrl = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${card.leftImg}`;
+                    const imgData = await toDataURL(fullImgUrl);
+                    
+                    const imgSize = 20; // Velikost obrázku (čtverec 20x20mm)
+                    const imgX = x + ( (cardWidth / 2) - imgSize ) / 2; // Vycentrování horizontálně na levé polovině
+                    const imgY = y + 12; // Posunout níže pod text
+                    
                     doc.addImage(imgData, 'PNG', imgX, imgY, imgSize, imgSize);
                 } catch (e) {
-                    console.error("Chyba vykreslení obrázku do PDF:", e.message);
+                    console.error("Chyba vykreslení obrázku:", e.message);
+                    // Pokud se obrázek nenačte, v PDF se nic nestane (prohlížeč to jen zaloguje)
                 }
             }
 
-            doc.setFontSize(9).setTextColor(0);
-            const splitRightText = doc.splitTextToSize(card.rightText, 26); 
-            doc.text(splitRightText, x + 51, y + (cardHeight / 2), { align: "center", baseline: "middle" });
+            // 4. Pravá strana karty (Německý text)
+            doc.setFontSize(10);
+            doc.setTextColor(0); // Výrazná černá barva pro německé slovíčko
+            
+            // Pravý text je většinou jen jedno slovo, takže ho dáme doprostřed
+            const rightText = doc.splitTextToSize(card.rightText, (cardWidth / 2) - 4);
+            doc.text(rightText, x + (cardWidth / 2) + 3, y + (cardHeight / 2), { baseline: "middle" });
+            
+            // Malé orientační pomocné číslo karty v dolním rohu pro učitele
+            doc.setFontSize(5);
+            doc.setTextColor(190, 190, 190);
+            doc.text((index + 1).toString(), x + 1.5, y + cardHeight - 1.5);
         }
 
-        doc.save(`domino-${currentTitle.toLowerCase()}.pdf`);
+        // Spodní nápis v patičce papíru
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Vytiskněte a rozstříhejte podle plných vnějších čar. Karty tvoří uzavřený kruh.", 148, 198, { align: "center" });
+
+        // Vyčištění názvu a spuštění stažení
+        const filename = currentTitle.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        doc.save(`domino_obrazky_${filename || 'export'}.pdf`);
     }
 </script>
 
