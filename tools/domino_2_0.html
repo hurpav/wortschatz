@@ -22,7 +22,7 @@
 <body>
 
 <div class="container">
-    <h1>🎲 Obrázkové Domino v1.1</h1>
+    <h1>🎲 Obrázkové Domino v2.0 (16 Unikátních Kartiček)</h1>
     
     <div class="setup-box">
         <div>
@@ -47,17 +47,18 @@
         </a>
     </div>
 
-    <h3>Aktuálně načtená slovíčka pro generování (Zobrazeno max 8 párů):</h3>
+    <h3>Kompletní výpis slovíček v databázi (Do PDF se vybere prvních 16):</h3>
     <table>
         <thead>
             <tr>
+                <th>#</th>
                 <th>Německy (DE)</th>
                 <th>Česky (CZ)</th>
                 <th>Obrázek (cesta)</th>
             </tr>
         </thead>
         <tbody id="vocabTable">
-            <tr><td colspan="3" style="text-align:center; color:#7f8c8d;">Žádná data nejsou načtena</td></tr>
+            <tr><td colspan="4" style="text-align:center; color:#7f8c8d;">Žádná data nejsou načtena</td></tr>
         </tbody>
     </table>
 </div>
@@ -78,7 +79,6 @@
 
         status.innerText = "🔄 Stahuji data z GitHubu...";
 
-        // UPRAVENO: Směřuje do tvé složky /data/ v repozitáři
         const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/data/${filename}?_ts=` + new Date().getTime();
 
         try {
@@ -88,7 +88,6 @@
             const data = await response.json();
             const key = filename.replace('.json', '');
             
-            // Podpora různých struktur tvých JSONů
             let rawData = data[key] || data.words || data.slovicka || data;
             if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
                 const foundKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
@@ -105,149 +104,15 @@
                 throw new Error("V JSONu nebyla nalezena žádná slovíčka.");
             }
 
-            // Zobrazíme na webu jen prvních 8, které reálně půjdou do domina
-            const displayWords = loadedWords.slice(0, 8);
-
+            // ZDE: Vypisujeme kompletně všechna načtená slovíčka bez ořezávání do tabulky
             let html = "";
-            displayWords.forEach(word => {
+            loadedWords.forEach((word, index) => {
                 const deWord = word.artikel ? `${word.artikel} ${word.de}` : (word.de || '');
                 html += `<tr>
+                    <td style="color: #7f8c8d; font-size: 14px;">${index + 1}</td>
                     <td><strong>${deWord}</strong></td>
                     <td>${word.cz || ''}</td>
                     <td><code>${word.image || ''}</code></td>
                 </tr>`;
             });
-            document.getElementById("vocabTable").innerHTML = html;
-            status.innerText = `✅ Úspěšně načteno: ${currentTitle} (Použito 8 z ${loadedWords.length} slovíček)`;
-
-        } catch (error) {
-            console.error(error);
-            status.innerText = "❌ Chyba: " + error.message;
-            alert("Nepodařilo se načíst data. " + error.message);
-        }
-    }
-
-    function toDataURL(url) {
-        return new Promise((resolve, reject) => {
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${url}`;
-            }
-
-            const img = new Image();
-            img.crossOrigin = 'Anonymous'; 
-            
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                const dataURL = canvas.toDataURL('image/png');
-                resolve(dataURL);
-            };
-            
-            img.onerror = function() {
-                reject(new Error(`Nepodařilo se načíst obrázek: ${url}`));
-            };
-            
-            img.src = url + '?_ts=' + new Date().getTime();
-        });
-    }
-
-    async function generatePDF() {
-        const activeWords = loadedWords.slice(0, 8);
-        if (activeWords.length < 8) {
-            alert("Potřebujete alespoň 8 slovíček pro vygenerování kompletní sady domina!");
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-        doc.setFont("Courier", "normal");
-        doc.setFontSize(16);
-        doc.text(`OBRÁZKOVÉ DOMINO: ${currentTitle.toUpperCase()}`, 148, 14, { align: "center" });
-
-        // OPRAVENO: Kompletní generování uzavřeného kruhu o 16 kartách pro 8 prvků
-        let dominoCards = [];
-        for (let i = 0; i < 8; i++) {
-            let prev = (i === 0) ? activeWords[7] : activeWords[i - 1];
-            
-            // 1. karta z dvojice: předchozí čeština/obrázek vlevo -> aktuální němčina vpravo
-            dominoCards.push({ 
-                leftText: prev.cz || '', 
-                leftImg: prev.image || '', 
-                rightText: activeWords[i].artikel ? `${activeWords[i].artikel} ${activeWords[i].de}` : (activeWords[i].de || '')
-            });
-            
-            // 2. karta z dvojice: aktuální čeština/obrázek vlevo -> následující němčina vpravo
-            let next = (i === 7) ? activeWords[0] : activeWords[i + 1];
-            dominoCards.push({ 
-                leftText: activeWords[i].cz || '', 
-                leftImg: activeWords[i].image || '', 
-                rightText: next.artikel ? `${next.artikel} ${next.de}` : (next.de || '')
-            });
-        }
-
-        // Mřížka 4x4 (16 karet na stránku)
-        const cardWidth = 68;   
-        const cardHeight = 35;  
-        const startX = 14;      
-        const startY = 24;      
-        const gapX = 3;         
-        const gapY = 6;         
-
-        for (let index = 0; index < dominoCards.length; index++) {
-            let card = dominoCards[index];
-            let col = index % 4;
-            let row = Math.floor(index / 4); 
-            let x = startX + col * (cardWidth + gapX);
-            let y = startY + row * (cardHeight + gapY);
-
-            // Rámeček karty
-            doc.setDrawColor(30, 30, 30).setLineWidth(0.4).setFillColor(255, 255, 255).rect(x, y, cardWidth, cardHeight, "FD");
-            
-            // Středová dělící čára
-            doc.setDrawColor(120, 120, 120).setLineWidth(0.2).setLineDashPattern([1.5, 1.5], 0);
-            doc.line(x + cardWidth / 2, y, x + cardWidth / 2, y + cardHeight);
-            doc.setLineDashPattern([], 0);
-
-            // LEVÁ STRANA (Čeština + Obrázek)
-            doc.setFontSize(8).setTextColor(90);
-            let splitLeftText = doc.splitTextToSize(card.leftText, 30);
-            doc.text(splitLeftText, x + 17, y + 4, { align: "center", baseline: "top" });
-
-            if (card.leftImg) {
-                try {
-                    const imgData = await toDataURL(card.leftImg);
-                    const imgSize = 18; 
-                    const imgX = x + (34 - imgSize) / 2; 
-                    const imgY = y + 13; 
-                    doc.addImage(imgData, 'PNG', imgX, imgY, imgSize, imgSize);
-                } catch (e) {
-                    console.error("Chyba vykreslení obrázku:", e.message);
-                }
-            }
-
-            // PRAVÁ STRANA (Němčina)
-            doc.setFontSize(9).setTextColor(0);
-            const splitRightText = doc.splitTextToSize(card.rightText, 30); 
-            doc.text(splitRightText, x + 51, y + (cardHeight / 2), { align: "center", baseline: "middle" });
-
-            // Pomocné číslo karty
-            doc.setFontSize(5);
-            doc.setTextColor(190, 190, 190);
-            doc.text((index + 1).toString(), x + 1.5, y + cardHeight - 1.5);
-        }
-
-        doc.setFontSize(8).setTextColor(150);
-        doc.text("Vytiskněte a rozstříhejte podle plných vnějších čar. Karty tvoří uzavřený kruh.", 148, 195, { align: "center" });
-
-        doc.save(`domino-${currentTitle.toLowerCase().replace(/[^a-z0-9]/g, "_")}.pdf`);
-    }
-</script>
-
-</body>
-</html>
+            document.getElementById("
