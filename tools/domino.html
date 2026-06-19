@@ -70,8 +70,8 @@
 
         status.innerText = "🔄 Stahuji data z GitHubu...";
 
-        // UPRAVENO: Načítá JSON korektně z hlavní složky repozitáře
-        const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/${filename}?_ts=` + new Date().getTime();
+        // NOVÝ (správná cesta):
+        const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/data/${filename}?_ts=` + new Date().getTime();
 
         try {
             const response = await fetch(url);
