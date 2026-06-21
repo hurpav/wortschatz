@@ -19,11 +19,39 @@
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        h1 {
-            color: #2c3e50;
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             border-bottom: 2px solid #ecf0f1;
             padding-bottom: 10px;
-            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+            padding: 0;
+        }
+        /* Tlačítko pro návrat do Toolboxu */
+        .toolbox-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #34495e;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .toolbox-btn:hover {
+            background-color: #2c3e50;
+            transform: translateY(-1px);
+        }
+        .toolbox-btn:active {
+            transform: translateY(0);
         }
         .setup-box {
             background: #fafbfc;
@@ -122,7 +150,7 @@
             border: 1px solid #d1d5db;
             background: #fff;
             display: block;
-            max-width: 150px; /* Zmenšený náhled pro tabulku, ZIP bude mít plných 300x130 */
+            max-width: 150px;
             height: auto;
         }
         .img-error {
@@ -136,7 +164,10 @@
 <body>
 
 <div class="container">
-    <h1>🧩 Paulovo TRIMINO – Inteligentní Generátor</h1>
+    <div class="header-container">
+        <h1>🧩 Paulovo TRIMINO – Inteligentní Generátor</h1>
+        <a href="../index.html" class="toolbox-btn" title="Zpět do Teacher's Toolbox">🧰 Teacher's Toolbox</a>
+    </div>
     
     <div class="setup-box">
         <div class="form-group">
@@ -205,7 +236,6 @@ function odstranDiakritiku(text) {
 function ziskejNazevObrazkuGitHub(pair) {
     if (!pair) return "default.png";
     const deText = pair.de || pair.DE || "";
-    // GitHub vyžaduje malá písmena, pokud jsou tak soubory pojmenované
     return `${deText.trim().toLowerCase()}.png`; 
 }
 
@@ -214,26 +244,21 @@ async function inicializovatSelect() {
     const select = document.getElementById("themeSelect");
     select.innerHTML = '<option value="">-- Načítám témata z GitHubu... --</option>';
     
-    // Záložní seznam témat pro případ, že GitHub API stávkuje (překročený limit požadavků)
     const zalozniTema = ["schulsachen.json", "familie.json", "berufe.json", "tiere.json"];
-    
     const apiUrl = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/data`;
     
     try {
         const response = await fetch(apiUrl);
-        
         if (!response.ok) throw new Error(`GitHub API odpovědělo kódem ${response.status}`);
         
         const files = await response.json();
         select.innerHTML = "";
         
         const jsonFiles = files.filter(file => file.name.endsWith('.json'));
-        
         if (jsonFiles.length === 0) {
             throw new Error("Ve složce data nebyly nalezeny žádné JSON soubory.");
         }
 
-        // Naplnění z živých dat z GitHub API
         jsonFiles.forEach(file => {
             naplnOptionDoSelectu(select, file.name);
         });
@@ -242,19 +267,14 @@ async function inicializovatSelect() {
         
     } catch (error) {
         console.warn("⚠️ Živé načítání z GitHub API selhalo. Pouštím záložní režim. Důvod:", error.message);
-        
-        // ZÁCHRANNÁ SÍŤ: Pokud API selže, naplníme select natvrdo fixními tématy
         select.innerHTML = "";
         zalozniTema.forEach(tema => {
             naplnOptionDoSelectu(select, tema);
         });
-        
-        // Spustíme načítání dat
         nahratDataAObrazky();
     }
 }
 
-// Pomocná funkce pro tvorbu textů v menu selectu
 function naplnOptionDoSelectu(selectElement, souborName) {
     const nazevBezKoncovky = souborName.replace('.json', '');
     const formatovanyNazev = nazevBezKoncovky.charAt(0).toUpperCase() + nazevBezKoncovky.slice(1);
@@ -282,7 +302,6 @@ async function nahratDataAObrazky() {
         
         const rawData = await response.json();
         
-        // Robustní kontrola struktury JSONu
         if (!Array.isArray(rawData)) {
             const foundArray = Object.values(rawData).find(val => Array.isArray(val));
             if (foundArray) {
@@ -303,7 +322,7 @@ async function nahratDataAObrazky() {
     }
 }
 
-// 3. KROK: Živý náhled do tabulky (včetně spojování členů)
+// 3. KROK: Živý náhled do tabulky
 function vykreslitTabulkuPreview() {
     const tbody = document.getElementById("previewTableBody");
     tbody.innerHTML = "";
@@ -324,7 +343,6 @@ function vykreslitTabulkuPreview() {
         const tdNum = document.createElement("td");
         tdNum.innerHTML = `<strong>${i + 1}</strong>`;
         
-        // Sestavení německého textu se členem pro tabulku náhledu
         let nemeckyText = "---";
         if (pair) {
             const clanek = (pair.artikel || pair.ARTIKEL || "").trim();
@@ -380,7 +398,7 @@ function vykreslitTabulkuPreview() {
     }
 }
 
-// 4. KROK: Příprava čistého obrázku (300x130 px) z GitHubu do ZIPu
+// 4. KROK: Příprava čistého obrázku (300x130 px) pro ZIP
 function generateImageBlob(pair, themeFolder) {
     return new Promise((resolve) => {
         const canvas = document.createElement("canvas");
@@ -415,7 +433,7 @@ function generateImageBlob(pair, themeFolder) {
     });
 }
 
-// 5. KROK: Stažení očíslovaného ZIP archivu (1.png, 2.png...)
+// 5. KROK: Stažení ZIP archivu
 async function downloadZipArchive() {
     const selectedType = document.getElementById("triminoType").value;
     let requiredPairs = 12;
@@ -448,7 +466,7 @@ async function downloadZipArchive() {
     });
 }
 
-// 6. KROK: Odeslání kompletních dat se členy přímo Paulovi
+// 6. KROK: Odeslání dat Paulovi
 function sendToPaulMatthies() {
     const selectedType = document.getElementById("triminoType").value;
     let requiredPairs = 12;
@@ -474,7 +492,6 @@ function sendToPaulMatthies() {
         let letter = alphabet[i];
         let pair = activePairs[i];
         
-        // Sestavení německého textu se členem pro odeslání Paulovi
         let nemeckyText = "Dummy";
         if (pair) {
             const clanek = (pair.artikel || pair.ARTIKEL || "").trim();
@@ -497,7 +514,7 @@ function sendToPaulMatthies() {
     window.open(finalUrl, "_blank");
 }
 
-// Navázání událostí (Event Listeners)
+// Event Listeners
 document.getElementById("themeSelect").addEventListener("change", nahratDataAObrazky);
 document.getElementById("triminoType").addEventListener("change", vykreslitTabulkuPreview);
 document.getElementById("imageModeCheckbox").addEventListener("change", function() {
@@ -508,7 +525,6 @@ document.getElementById("imageModeCheckbox").addEventListener("change", function
 document.getElementById("generateBtn").addEventListener("click", sendToPaulMatthies);
 document.getElementById("downloadZipBtn").addEventListener("click", downloadZipArchive);
 
-// První spuštění aplikace (Inicializace)
 inicializovatSelect();
 </script>
 

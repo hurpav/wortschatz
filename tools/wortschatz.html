@@ -144,14 +144,14 @@
         <div style="margin-bottom: 15px;">
             <label for="themeSelect" style="display:block; font-weight:600; margin-bottom:5px;">Téma:</label>
             <select id="themeSelect" onchange="loadTheme()">
-                <option value="schulsachen">Schulsachen (Pomůcky)</option>
-                <option value="familie">Familie (Rodina)</option>
-                <option value="berufe">Berufe (Povolání)</option>
-                <option value="hobbys">Hobbys (Záliby)</option>
-                <option value="sport">Sportarten (Sporty)</option>
-                <option value="wochentage">Wochentage (Dny v týdnu)</option>
-                <option value="essen">Essen (Jídlo)</option>
-                <option value="stundenplan">Stundenplan / Monate</option>
+                <option value="schulsachen.json">Schulsachen (Pomůcky)</option>
+                <option value="familie.json">Familie (Rodina)</option>
+                <option value="berufe.json">Berufe (Povolání)</option>
+                <option value="hobbys.json">Hobbys (Záliby)</option>
+                <option value="sport.json">Sportarten (Sporty)</option>
+                <option value="wochentage.json">Wochentage (Dny v týdnu)</option>
+                <option value="essen.json">Essen (Jídlo)</option>
+                <option value="stundenplan.json">Stundenplan / Monate</option>
             </select>
         </div>
     </div>
@@ -186,6 +186,11 @@
 </div>
 
 <script>
+    // Konfigurace repozitáře shodná s generátorem Trimina
+    const GH_USER = "hurpav";
+    const GH_REPO = "wortschatz";
+    const BASE_URL_DATA = `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/data/`;
+
     let currentWords = [];
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -195,32 +200,37 @@
     async function loadTheme() {
         const selectEl = document.getElementById('themeSelect');
         if (!selectEl) return;
-        const key = selectEl.value;
+        const filename = selectEl.value; // Např. "schulsachen.json"
         const titleText = selectEl.options[selectEl.selectedIndex].text;
         
-        // Dynamická úprava hlavního nadpisu s verzí
+        // Úprava nadpisu podle zvoleného tématu
         document.getElementById('mainTitle').textContent = `📝 Wortschatz v1.0 - ${titleText.split(' ')[0]}`;
 
         const container = document.getElementById('tableContainer');
-        if (container) container.innerHTML = '<span class="loading-text">Načítám data...</span>';
+        if (container) container.innerHTML = '<span class="loading-text">Načítám data z GitHubu...</span>';
 
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
-        
-        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
-        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+        // Primární cesta přímo z raw GitHubu s antikesovacím parametrem
+        const primaryUrl = `${BASE_URL_DATA}${filename}?_ts=${new Date().getTime()}`;
+        // Záložní cesta lokálně do stejné složky
+        const backupUrl = `data/${filename}`;
 
         try {
             let response = await fetch(primaryUrl);
-            if (!response.ok) response = await fetch(backupUrl);
-            if (!response.ok) throw new Error("Soubor s daty nebyl nalezen.");
+            if (!response.ok) {
+                console.warn("GitHub Raw selhal, zkouším lokální fallback...");
+                response = await fetch(backupUrl);
+            }
+            if (!response.ok) throw new Error("Soubor se slovíčky nebyl nalezen na GitHubu ani lokálně.");
 
             const data = await response.json();
-            let rawData = data[key] || data.words || data;
+            
+            // Očištění klíče bez koncovky pro případné hledání struktur uvnitř JSONu
+            const keyWithoutExtension = filename.replace('.json', '');
+            let rawData = data[keyWithoutExtension] || data.words || data;
             
             if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
-                const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
-                currentWords = firstKey ? rawData[firstKey] : [];
+                const firstArrayKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                currentWords = firstArrayKey ? rawData[firstArrayKey] : [];
             } else if (Array.isArray(rawData)) {
                 currentWords = rawData;
             } else {
@@ -230,7 +240,7 @@
             renderData();
         } catch (err) {
             console.error(err);
-            if (container) container.innerHTML = `<span style="color:red;">Chyba při načítání: ${err.message}</span>`;
+            if (container) container.innerHTML = `<span style="color:red; font-weight:bold;">❌ Chyba při načítání: ${err.message}</span>`;
         }
     }
 
@@ -240,7 +250,7 @@
         
         if (currentWords.length === 0) {
             copyArea.value = "";
-            container.innerHTML = "Žádná slovíčka k dispozici.";
+            container.innerHTML = "Žádná slovíčka k dispozici v tomto souboru.";
             return;
         }
 
@@ -248,8 +258,11 @@
         let tableHtml = `<table><thead><tr><th>Německy</th><th>Česky</th></tr></thead><tbody>`;
 
         currentWords.forEach(item => {
-            const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
-            const czWord = item.cz || ""; // Opraveno na tvůj klíč "cz"
+            const clanek = (item.artikel || item.ARTIKEL || "").trim();
+            const slovicko = (item.de || item.DE || "").trim();
+            const deWord = clanek ? `${clanek} ${slovicko}` : slovicko;
+            
+            const czWord = (item.cz || item.CZ || item.cs || item.CS || "").trim();
             
             textLines.push(`${deWord}\t${czWord}`);
             tableHtml += `<tr><td><strong>${deWord}</strong></td><td>${czWord}</td></tr>`;
@@ -263,14 +276,14 @@
 
     function copyToClipboard() {
         const copyArea = document.getElementById('copyArea');
+        if (!copyArea.value) return;
         copyArea.select();
         copyArea.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(copyArea.value);
         
-        alert("Slovíčka byla zkopírována do schránky! Můžeš je vložit do Wordwallu.");
+        alert("Slovíčka byla zkopírována do schránky! Můžeš je přímo vložit do Wordwallu.");
     }
 
-    // Pomocná funkce pro zamíchání pole (Fisher-Yates)
     function shuffle(array) {
         let currentIndex = array.length, randomIndex;
         while (currentIndex != 0) {
@@ -284,28 +297,25 @@
     function exportToBlooketCSV() {
         if (currentWords.length === 0) return;
 
-        // Všechny dostupné české překlady z této lekce pro generování falešných odpovědí
-        const allCzAnswers = currentWords.map(item => item.cz || "").filter(txt => txt !== "");
+        const allCzAnswers = currentWords.map(item => (item.cz || item.CZ || item.cs || item.CS || "").trim()).filter(txt => txt !== "");
 
-        // Kompletní Blooket struktura se sloupci Choice 1-4
         let csvLines = ["Question,Answer,Choice 1,Choice 2,Choice 3,Choice 4,Time Limit"];
         
         currentWords.forEach(item => {
-            const deWord = item.artikel ? `${item.artikel} ${item.de}` : (item.de || "");
-            const correctCz = item.cz || "";
+            const clanek = (item.artikel || item.ARTIKEL || "").trim();
+            const slovicko = (item.de || item.DE || "").trim();
+            const deWord = clanek ? `${clanek} ${slovicko}` : slovicko;
             
-            // Vyfiltrujeme z lekce všechno kromě aktuální správné odpovědi
+            const correctCz = (item.cz || item.CZ || item.cs || item.CS || "").trim();
+            
             let wrongChoices = allCzAnswers.filter(ans => ans !== correctCz);
-            // Náhodně zamícháme zbytek slovíček
             shuffle(wrongChoices);
             
-            // Dosadíme distraktory
             let choice1 = wrongChoices[0] || "";
             let choice2 = wrongChoices[1] || "";
             let choice3 = wrongChoices[2] || "";
             let choice4 = wrongChoices[3] || "";
 
-            // Ošetření uvozovek pro bezpečné CSV bez rozpadu řádků
             const escapeCsv = (str) => `"${str.replace(/"/g, '""')}"`;
 
             const q = escapeCsv(deWord);
@@ -319,12 +329,11 @@
             csvLines.push(`${q},${a},${c1},${c2},${c3},${c4},${timeLimit}`);
         });
 
-        // Přidání UTF-8 BOM (\uFEFF) aby Excel i Blooket správně pobraly české znaky (ě, š, č, ř, ž...)
         const csvContent = "\uFEFF" + csvLines.join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         
         const selectEl = document.getElementById('themeSelect');
-        const key = selectEl ? selectEl.value : 'slovnicek';
+        const key = selectEl ? selectEl.value.replace('.json', '') : 'slovnicek';
         
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
