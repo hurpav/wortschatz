@@ -13,6 +13,11 @@
             --text: #1f2937;
             --border: #ccfbf1;
             --border-dark: #99f6e4;
+            
+            /* Barvy pro německé členy */
+            --der-color: #0284c7;  /* Modrá */
+            --die-color: #dc2626;  /* Červená */
+            --das-color: #16a34a;  /* Zelená */
         }
 
         body {
@@ -124,10 +129,31 @@
             display: flex;
             gap: 15px;
             justify-content: center;
-            margin-top: 10px;
+            margin-top: 20px;
         }
 
-        /* Styl chybového hlášení přesně podle tvého screenshotu */
+        /* Styly pro barevné členy v náhledu */
+        .badge-der { color: var(--der-color); font-weight: bold; }
+        .badge-die { color: var(--die-color); font-weight: bold; }
+        .badge-das { color: var(--das-color); font-weight: bold; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th, table td {
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
         .error-box {
             color: #b91c1c;
             font-weight: bold;
@@ -136,15 +162,6 @@
             background: #fef2f2;
             border-radius: 6px;
             margin-top: 10px;
-        }
-
-        .error-url {
-            font-size: 0.85rem;
-            font-weight: normal;
-            color: #991b1b;
-            display: block;
-            margin-top: 5px;
-            word-break: break-all;
         }
 
         .success-box {
@@ -200,9 +217,9 @@
             <div>
                 <label>Rozsah ID slovíček:</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" id="rangeFrom" value="1" min="1" style="text-align: center;">
+                    <input type="number" id="rangeFrom" value="1" min="1" onchange="renderPreview()" style="text-align: center;">
                     <span>až</span>
-                    <input type="number" id="rangeTo" value="10" min="1" style="text-align: center;">
+                    <input type="number" id="rangeTo" value="12" min="1" onchange="renderPreview()" style="text-align: center;">
                 </div>
             </div>
         </div>
@@ -211,11 +228,11 @@
             <label>Podoba slovíčku:</label>
             <div class="radio-group">
                 <label class="radio-option">
-                    <input type="radio" name="modeSelect" value="portfolio" checked>
+                    <input type="radio" name="modeSelect" value="portfolio" checked onchange="renderPreview()">
                     📁 Portfolio
                 </label>
                 <label class="radio-option">
-                    <input type="radio" name="modeSelect" value="practice">
+                    <input type="radio" name="modeSelect" value="practice" onchange="renderPreview()">
                     📝 Procvičování
                 </label>
             </div>
@@ -225,3 +242,117 @@
         <div id="statusContainer">
             <span class="loading-text">Čekám na načtení dat...</span>
         </div>
+    </div>
+
+    <div class="card">
+        <h2>Živý náhled barevného slovníčku</h2>
+        <div id="previewContainer">
+            <span class="loading-text">Vyberte téma pro zobrazení náhledu...</span>
+        </div>
+    </div>
+
+    <div class="flex-actions">
+        <button class="btn" onclick="generatePDF()">🖨️ Vygenerovat PDF</button>
+        <a href="../index.html" style="text-decoration: none;">
+            <button class="btn btn-secondary" type="button">🏠 Dashboard</button>
+        </a>
+    </div>
+</div>
+
+<script>
+    const GH_USER = "hurpav";
+    const GH_REPO = "wortschatz";
+    const BASE_URL_DATA = `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/data/`;
+
+    let currentWords = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadTheme();
+    });
+
+    async function loadTheme() {
+        const selectEl = document.getElementById('themeSelect');
+        if (!selectEl) return;
+        const filename = selectEl.value;
+
+        const statusContainer = document.getElementById('statusContainer');
+        if (statusContainer) statusContainer.innerHTML = '<span class="loading-text">Načítám data z GitHubu...</span>';
+
+        const primaryUrl = `${BASE_URL_DATA}${filename}?_ts=${new Date().getTime()}`;
+        const backupUrl = `data/${filename}`;
+
+        try {
+            let response = await fetch(primaryUrl);
+            if (!response.ok) response = await fetch(backupUrl);
+            if (!response.ok) throw new Error("Soubor se slovíčky nebyl nalezen.");
+
+            const data = await response.json();
+            const key = filename.replace('.json', '');
+            let rawData = data[key] || data.words || data;
+            
+            if (Array.isArray(rawData)) {
+                currentWords = rawData;
+            } else if (rawData && typeof rawData === 'object') {
+                const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                currentWords = firstKey ? rawData[firstKey] : [];
+            } else {
+                currentWords = [];
+            }
+
+            if (statusContainer) {
+                statusContainer.innerHTML = `<div class="success-box">✓ Úspěšně načteno ${currentWords.length} slovíček z tématu.</div>`;
+            }
+
+            // Nastavení automatického rozsahu podle počtu nalezených slovíček
+            document.getElementById('rangeTo').value = currentWords.length;
+            
+            renderPreview();
+        } catch (err) {
+            console.error(err);
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <div class="error-box">
+                        ❌ Chyba načítání: Data nelze stáhnout lokálně. Spusťte VS Code Live Server nebo uložte změny na GitHub.
+                        <span style="font-size:0.8rem; display:block; font-weight:normal; margin-top:4px;">Detail: ${err.message}</span>
+                    </div>`;
+            }
+        }
+    }
+
+    // Funkce, která obarví členy der/die/das do HTML podoby
+    function formatGermanWordWithColors(item) {
+        const artikel = (item.artikel || item.ARTIKEL || "").trim().toLowerCase();
+        const deWord = (item.de || item.DE || "").trim();
+
+        if (artikel === "der") {
+            return `<span class="badge-der">der</span> ${deWord}`;
+        } else if (artikel === "die") {
+            return `<span class="badge-die">die</span> ${deWord}`;
+        } else if (artikel === "das") {
+            return `<span class="badge-das">das</span> ${deWord}`;
+        }
+        
+        return artikel ? `${artikel} ${deWord}` : deWord;
+    }
+
+    function renderPreview() {
+        const previewContainer = document.getElementById('previewContainer');
+        if (currentWords.length === 0) {
+            previewContainer.innerHTML = "Žádná data k zobrazení.";
+            return;
+        }
+
+        const from = parseInt(document.getElementById('rangeFrom').value) || 1;
+        const to = parseInt(document.getElementById('rangeTo').value) || currentWords.length;
+        const mode = document.querySelector('input[name="modeSelect"]:checked').value;
+
+        // Výběr slovíček v zadaném rozsahu indexů
+        const selected = currentWords.slice(from - 1, to);
+
+        let html = `<table><thead><tr><th>ID</th><th>Německy (Barevně)</th><th>Česky</th></tr></thead><tbody>`;
+        
+        selected.forEach((item, index) => {
+            const id = from + index;
+            const deFormatted = formatGermanWordWithColors(item);
+            // V režimu procvičování schováme český překlad, v portfoliu ho ukážeme
+            const cz
