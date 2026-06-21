@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Trimino Generátor v3.2</title>
+    <title>Centrální Trimino Generátor v3.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #f0f4f8; padding: 20px; color: #333; }
@@ -23,7 +23,7 @@
 <body>
 
 <div class="container">
-    <h1>📐 Centrální Trimino Generátor v3.2 (Fix načítání z /data/)</h1>
+    <h1>📐 Trimino Generátor v3.3 (Blokový tisk pro snadné stříhání)</h1>
     
     <div class="setup-box">
         <div style="flex: 1; min-width: 250px;">
@@ -42,11 +42,11 @@
         </div>
         
         <div style="flex: 1; min-width: 250px;">
-            <label><strong>2. Typ Trimina (Přesná geometrie):</strong></label><br>
+            <label><strong>2. Typ Trimina:</strong></label><br>
             <select id="triminoType" style="width: 100%; margin-top: 5px;">
-                <option value="9">Dreieck (9 dílků, 9 párů slov)</option>
-                <option value="12">Stern (12 dílků, 12 párů slov)</option>
-                <option value="30">Sechseck (24 dílků, 30 párů slov)</option>
+                <option value="9">Dreieck (9 dílků, 9 párů)</option>
+                <option value="12">Stern (12 dílků, 12 párů)</option>
+                <option value="30">Sechseck (24 dílků, 30 párů)</option>
             </select>
         </div>
         
@@ -60,7 +60,7 @@
         <div class="flex-col">
             <div id="statusMessage" class="status">Čekám na výběr tématu nebo ruční vložení...</div>
             <label><strong>Editovatelné textové pole (Německy;Česky):</strong></label>
-            <textarea id="rawPairsInput" placeholder="der Rucksack;batoh&#10;das Heft;sešit&#10;das Lehrbuch;učebnice"></textarea>
+            <textarea id="rawPairsInput" placeholder="der Rucksack;batoh&#10;das Heft;sešit"></textarea>
         </div>
     </div>
 </div>
@@ -91,10 +91,9 @@
 
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Soubor ${filename} se nepodařilo ve složce /data/ najít.`);
+            if (!response.ok) throw new Error("Soubor se nepodařilo ve složce /data/ najít.");
             const data = await response.json();
             
-            // ROZŠÍŘENÁ LOGIKA ČTENÍ JSON STRUKTURY (Stejná jako u domina)
             let rawData = data[folder] || data.words || data.slovicka || data;
             if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
                 const foundKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
@@ -103,7 +102,6 @@
             
             let wordsArray = Array.isArray(rawData) ? rawData : [];
 
-            // Filtrace duplicit a parsování párů slov
             let seen = new Set();
             activePairs = [];
             wordsArray.forEach(w => {
@@ -115,11 +113,6 @@
                 }
             });
 
-            if (activePairs.length === 0) {
-                throw new Error("V souboru JSON nebyla rozpoznána žádná platná slovíčka.");
-            }
-
-            // Výpis do textarey pro kontrolu
             document.getElementById("rawPairsInput").value = activePairs.map(p => `${p.de};${p.cz}`).join("\n");
             
             const count = activePairs.length;
@@ -127,19 +120,17 @@
             
             if (count >= 30) {
                 typeSelect.value = "30";
-                status.innerText = `✅ Načteno ${count} slovíček. Automaticky zvolen Sechseck (24 dílků, 30 párů).`;
+                status.innerText = `✅ Načteno ${count} slovíček. Zvolen Sechseck (24 dílků, 30 párů).`;
             } else if (count >= 12) {
                 typeSelect.value = "12";
-                status.innerText = `✅ Načteno ${count} slovíček. Automaticky zvolen Stern (12 dílků, 12 párů).`;
+                status.innerText = `✅ Načteno ${count} slovíček. Zvolen Stern (12 dílků, 12 párů).`;
             } else {
                 typeSelect.value = "9";
-                status.innerText = `✅ Načteno ${count} slovíček. Automaticky zvolen Dreieck (9 dílků, 9 párů).`;
+                status.innerText = `✅ Načteno ${count} slovíček. Zvolen Dreieck (9 dílků, 9 párů).`;
             }
 
         } catch (error) {
-            console.error(error);
-            status.innerText = "❌ Chyba načítání: " + error.message;
-            alert(error.message);
+            status.innerText = "❌ Chyba: " + error.message;
         }
     }
 
@@ -160,12 +151,11 @@
     function generateTriminoPDF() {
         const selectedType = document.getElementById("triminoType").value;
         let requiredPairs = 9;
-
-        if (selectedType === "12") { requiredPairs = 12; }
-        if (selectedType === "30") { requiredPairs = 30; }
+        if (selectedType === "12") requiredPairs = 12;
+        if (selectedType === "30") requiredPairs = 30;
         
         if (activePairs.length < requiredPairs) {
-            alert(`Pro tento typ potřebujete alespoň ${requiredPairs} párů slovíček. Aktuálně máte v poli: ${activePairs.length}`);
+            alert(`Pro tento typ potřebujete alespoň ${requiredPairs} párů slovíček. Máte: ${activePairs.length}`);
             return;
         }
 
@@ -176,61 +166,83 @@
 
         let triangles = [];
 
-        // 1. DREIECK: 9 dílků, 9 párů
+        // Definice obsahu hran pro spojené sítě
         if (requiredPairs === 9) {
             triangles = [
-                { sides: [gamePairs[0].de, "", ""] },
-                { sides: ["", gamePairs[0].cz, gamePairs[1].de] },
-                { sides: [gamePairs[1].cz, gamePairs[2].de, ""] },
-                { sides: ["", "", gamePairs[2].cz] },
-                { sides: [gamePairs[3].de, gamePairs[4].cz, ""] },
-                { sides: ["", gamePairs[3].cz, gamePairs[5].de] },
-                { sides: [gamePairs[5].cz, "", gamePairs[6].de] },
-                { sides: ["", gamePairs[7].de, gamePairs[8].cz] },
-                { sides: [gamePairs[8].de, "", ""] }
+                { sides: [gamePairs[0].de, "", ""], up: true },
+                { sides: ["", gamePairs[0].cz, gamePairs[1].de], up: false },
+                { sides: [gamePairs[1].cz, gamePairs[2].de, ""], up: true },
+                { sides: ["", "", gamePairs[2].cz], up: false },
+                { sides: [gamePairs[3].de, gamePairs[4].cz, ""], up: true },
+                { sides: ["", gamePairs[3].cz, gamePairs[5].de], up: false },
+                { sides: [gamePairs[5].cz, "", gamePairs[6].de], up: true },
+                { sides: ["", gamePairs[7].de, gamePairs[8].cz], up: false },
+                { sides: [gamePairs[8].de, "", ""], up: true }
             ];
-        } 
-        // 2. STERN: 12 dílků, 12 párů
-        else if (requiredPairs === 12) {
+        } else if (requiredPairs === 12) {
+            // Hvězda - 12 propojených dílků v pásu střídajícím směr nahoru/dolů
             for (let i = 0; i < 12; i++) {
                 let nextIdx = (i + 1) % 12;
                 triangles.push({
-                    sides: [gamePairs[i].de, gamePairs[nextIdx].cz, ""]
+                    sides: [gamePairs[i].de, gamePairs[nextIdx].cz, ""],
+                    up: (i % 2 === 0)
                 });
             }
-        } 
-        // 3. SECHSECK: 24 dílků, 30 párů
-        else if (requiredPairs === 30) {
+        } else if (requiredPairs === 30) {
+            // Šestistěn - 24 dílků
             for (let i = 0; i < 24; i++) {
                 let p1 = gamePairs[i % 30].de;
                 let p2 = gamePairs[(i + 4) % 30].cz;
                 let p3 = (i % 4 === 0) ? "" : gamePairs[(i + 9) % 30].de;
-                triangles.push({ sides: [p1, p2, p3] });
+                triangles.push({
+                    sides: [p1, p2, p3],
+                    up: (i % 2 === 0)
+                });
             }
         }
 
-        let currentX = 25;
-        let currentY = 35;
-        const sideLength = 48; 
-        const h = sideLength * (Math.sqrt(3) / 2); 
-
+        // Výpočet geometrie pásu
+        const sideLength = 40; // Délka hrany v mm
+        const h = sideLength * (Math.sqrt(3) / 2); // Výška trojúhelníku
+        
+        let startX = 25;
+        let startY = 40;
+        
         doc.setFontSize(14);
         const themeSelect = document.getElementById("themeSelect");
         const titulTemy = themeSelect.value ? themeSelect.options[themeSelect.selectedIndex].text : "VLASTNI";
         doc.text(`TRIMINO: ${odstranDiakritiku(titulTemy).toUpperCase()}`, 105, 15, { align: "center" });
-        doc.setFontSize(7);
+        doc.setFontSize(6.5);
 
         triangles.forEach((tri, index) => {
-            if (currentY + h > 270) {
+            // Pokud přeteče řádek na A4, skočíme na nový pás níže
+            if (startX + sideLength > 195) {
+                startX = 25;
+                startY += h + 20;
+            }
+            
+            // Nová stránka při vertikálním přetečení
+            if (startY + h > 270) {
                 doc.addPage();
-                currentY = 35;
-                currentX = 25;
+                startY = 40;
+                startX = 25;
             }
 
-            let x1 = currentX, y1 = currentY + h;
-            let x2 = currentX + sideLength, y2 = currentY + h;
-            let x3 = currentX + (sideLength / 2), y3 = currentY;
+            let x1, y1, x2, y2, x3, y3;
 
+            if (tri.up) {
+                // Trojúhelník špičkou NAHORU
+                x1 = startX;          y1 = startY + h;
+                x2 = startX + sideLength; y2 = startY + h;
+                x3 = startX + (sideLength / 2); y3 = startY;
+            } else {
+                // Trojúhelník špičkou DOLŮ (otočený)
+                x1 = startX;          y1 = startY;
+                x2 = startX + sideLength; y2 = startY;
+                x3 = startX + (sideLength / 2); y3 = startY + h;
+            }
+
+            // Vykreslení obrysu
             doc.setDrawColor(40).setLineWidth(0.3);
             doc.line(x1, y1, x2, y2);
             doc.line(x2, y2, x3, y3);
@@ -240,25 +252,31 @@
             let txtB = odstranDiakritiku(tri.sides[1] || "");
             let txtC = odstranDiakritiku(tri.sides[2] || "");
 
-            if (txtA) { doc.text(txtA, currentX + (sideLength / 2), currentY + h - 2, { align: "center" }); }
-            if (txtB) { doc.text(txtB, currentX + (sideLength * 0.75) - 2, currentY + (h / 2) + 2, { angle: -60 }); }
-            if (txtC) { doc.text(txtC, currentX + (sideLength * 0.25) + 2, currentY + (h / 2) - 2, { angle: 60 }); }
-
-            doc.setTextColor(170);
-            doc.setFontSize(5);
-            doc.text((index + 1).toString(), currentX + (sideLength / 2), currentY + (h * 0.65), { align: "center" });
-            doc.setTextColor(0);
-            doc.setFontSize(7);
-
-            currentX += sideLength + 8;
-            if (currentX + sideLength > 195) {
-                currentX = 25;
-                currentY += h + 12;
+            // Vykreslování textů s ohledem na rotaci a orientaci dílku
+            if (tri.up) {
+                if (txtA) doc.text(txtA, startX + (sideLength / 2), startY + h - 1.5, { align: "center" });
+                if (txtB) doc.text(txtB, startX + (sideLength * 0.75) - 1.5, startY + (h / 2) + 1.5, { angle: -60 });
+                if (txtC) doc.text(txtC, startX + (sideLength * 0.25) + 1.5, startY + (h / 2) - 1.5, { angle: 60 });
+            } else {
+                if (txtA) doc.text(txtA, startX + (sideLength / 2), startY + 1.5, { align: "center" });
+                if (txtB) doc.text(txtB, startX + (sideLength * 0.75) - 1.5, startY + (h / 2) - 1.5, { angle: 60 });
+                if (txtC) doc.text(txtC, startX + (sideLength * 0.25) + 1.5, startY + (h / 2) + 1.5, { angle: -60 });
             }
+
+            // Číslo dílku pro kontrolu učitele
+            doc.setTextColor(180);
+            doc.setFontSize(4.5);
+            let numY = tri.up ? startY + (h * 0.65) : startY + (h * 0.35);
+            doc.text((index + 1).toString(), startX + (sideLength / 2), numY, { align: "center" });
+            doc.setTextColor(0);
+            doc.setFontSize(6.5);
+
+            // KLÍČOVÝ POSUN: Další trojúhelník v pásu začíná o polovinu základny dál
+            startX += (sideLength / 2);
         });
 
         const bezpecnyNazev = odstranDiakritiku(titulTemy.toLowerCase()).replace(/[^a-z0-9]/g, "_");
-        doc.save(`trimino-${bezpecnyNazev}.pdf`);
+        doc.save(`trimino-bloky-${bezpecnyNazev}.pdf`);
     }
 </script>
 
