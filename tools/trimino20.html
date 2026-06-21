@@ -1,1 +1,287 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Centrální Trimino Generátor v3.4</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f4f8; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; margin-top: 0; }
+        .setup-box { background: #ecf0f1; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        select, textarea, button { padding: 10px; font-size: 15px; border-radius: 4px; border: 1px solid #bdc3c7; }
+        textarea { width: 100%; height: 150px; font-family: monospace; resize: vertical; }
+        button { background: #2980b9; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #2471a3; }
+        .btn-generate { background: #27ae60; }
+        .btn-generate:hover { background: #219653; }
+        .status { font-weight: bold; color: #2980b9; margin: 5px 0; }
+        .flex-row { display: flex; gap: 20px; width: 100%; }
+        .flex-col { flex: 1; }
+    </style>
+</head>
+<body>
 
+<div class="container">
+    <h1>📐 Trimino Generátor v3.4 (Kompaktní tisková síť)</h1>
+    
+    <div class="setup-box">
+        <div style="flex: 1; min-width: 250px;">
+            <label><strong>1. Načíst z GitHub databáze:</strong></label><br>
+            <select id="themeSelect" style="width: 100%; margin-top: 5px;">
+                <option value="">-- Vyberte téma --</option>
+                <option value="schulsachen.json">Schulsachen (Školní pomůcky)</option>
+                <option value="familie.json">Familie (Rodina)</option>
+                <option value="berufe.json">Berufe (Povolání)</option>
+                <option value="hobbys.json">Hobbys (Záliby)</option>
+                <option value="sport.json">Sportarten (Sporty)</option>
+                <option value="wochentage.json">Wochentage (Dny v týdnu)</option>
+                <option value="essen.json">Essen (Jídlo)</option>
+                <option value="stundenplan.json">Stundenplan / Monate</option>
+            </select>
+        </div>
+        
+        <div style="flex: 1; min-width: 250px;">
+            <label><strong>2. Typ Trimina:</strong></label><br>
+            <select id="triminoType" style="width: 100%; margin-top: 5px;">
+                <option value="9">Dreieck (9 dílků, 9 párů)</option>
+                <option value="12">Stern (12 dílků, 12 párů)</option>
+                <option value="30">Sechseck (24 dílků, 30 párů)</option>
+            </select>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button id="generateBtn" class="btn-generate">🖨️ Vygenerovat Trimino PDF</button>
+            <a href="../index.html" style="text-decoration: none;"><button type="button" style="background: #7f8c8d;">🏠 Zpět</button></a>
+        </div>
+    </div>
+
+    <div class="flex-row">
+        <div class="flex-col">
+            <div id="statusMessage" class="status">Čekám na výběr tématu nebo ruční vložení...</div>
+            <label><strong>Editovatelné textové pole (Německy;Česky):</strong></label>
+            <textarea id="rawPairsInput" placeholder="der Rucksack;batoh&#10;das Heft;sešit"></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    const githubUser = "hurpav"; 
+    const repoName = "wortschatz";
+    let activePairs = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("themeSelect").addEventListener("change", loadFromGitHub);
+        document.getElementById("generateBtn").addEventListener("click", generateTriminoPDF);
+        document.getElementById("rawPairsInput").addEventListener("input", parseManualInput);
+    });
+
+    function odstranDiakritiku(text) {
+        return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    async function loadFromGitHub() {
+        const filename = document.getElementById("themeSelect").value;
+        const status = document.getElementById("statusMessage");
+        if (!filename) return;
+
+        status.innerText = "🔄 Stahuji data z GitHubu...";
+        const folder = filename.replace('.json', ''); 
+        const url = `https://raw.githubusercontent.com/${githubUser}/${repoName}/main/data/${filename}?_ts=` + new Date().getTime();
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Soubor se nepodařilo ve složce /data/ najít.");
+            const data = await response.json();
+            
+            let rawData = data[folder] || data.words || data.slovicka || data;
+            if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
+                const foundKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                rawData = foundKey ? rawData[foundKey] : [];
+            }
+            
+            let wordsArray = Array.isArray(rawData) ? rawData : [];
+
+            let seen = new Set();
+            activePairs = [];
+            wordsArray.forEach(w => {
+                let cz = (w.cz || '').trim();
+                let de = w.artikel ? `${w.artikel} ${w.de}` : (w.de || '').trim();
+                if (cz && de && !seen.has(cz.toLowerCase())) {
+                    seen.add(cz.toLowerCase());
+                    activePairs.push({ de: de, cz: cz });
+                }
+            });
+
+            document.getElementById("rawPairsInput").value = activePairs.map(p => `${p.de};${p.cz}`).join("\n");
+            
+            const count = activePairs.length;
+            const typeSelect = document.getElementById("triminoType");
+            
+            if (count >= 30) {
+                typeSelect.value = "30";
+                status.innerText = `✅ Načteno ${count} slovíček. Zvolen Sechseck (24 dílků, 30 párů).`;
+            } else if (count >= 12) {
+                typeSelect.value = "12";
+                status.innerText = `✅ Načteno ${count} slovíček. Zvolen Stern (12 dílků, 12 párů).`;
+            } else {
+                typeSelect.value = "9";
+                status.innerText = `✅ Načteno ${count} slovíček. Zvolen Dreieck (9 dílků, 9 párů).`;
+            }
+
+        } catch (error) {
+            status.innerText = "❌ Chyba: " + error.message;
+        }
+    }
+
+    function parseManualInput() {
+        const text = document.getElementById("rawPairsInput").value;
+        activePairs = [];
+        text.split("\n").forEach(line => {
+            let parts = line.split(";");
+            if (parts.length >= 2) {
+                let de = parts[0].trim();
+                let cz = parts[1].trim();
+                if (de && cz) activePairs.push({ de: de, cz: cz });
+            }
+        });
+        document.getElementById("statusMessage").innerText = `✍️ Ručně upraveno: Eviduji ${activePairs.length} párů slov.`;
+    }
+
+    function generateTriminoPDF() {
+        const selectedType = document.getElementById("triminoType").value;
+        let requiredPairs = 9;
+        if (selectedType === "12") requiredPairs = 12;
+        if (selectedType === "30") requiredPairs = 30;
+        
+        if (activePairs.length < requiredPairs) {
+            alert(`Pro tento typ potřebujete alespoň ${requiredPairs} párů slovíček. Máte: ${activePairs.length}`);
+            return;
+        }
+
+        const gamePairs = activePairs.slice(0, requiredPairs);
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        doc.setFont("Courier", "bold");
+
+        let triangles = [];
+
+        if (requiredPairs === 9) {
+            triangles = [
+                { sides: [gamePairs[0].de, "", ""], up: true },
+                { sides: [gamePairs[0].cz, gamePairs[1].de, ""], up: false },
+                { sides: ["", gamePairs[1].cz, gamePairs[2].de], up: true },
+                { sides: [gamePairs[2].cz, "", ""], up: false },
+                { sides: [gamePairs[3].de, gamePairs[4].cz, ""], up: true },
+                { sides: ["", gamePairs[3].cz, gamePairs[5].de], up: false },
+                { sides: [gamePairs[5].cz, "", gamePairs[6].de], up: true },
+                { sides: ["", gamePairs[7].de, gamePairs[8].cz], up: false },
+                { sides: [gamePairs[8].de, "", ""], up: true }
+            ];
+        } else if (requiredPairs === 12) {
+            // Hvězda - 12 propojených dílků v pásu
+            for (let i = 0; i < 12; i++) {
+                let nextIdx = (i + 1) % 12;
+                triangles.push({
+                    sides: [gamePairs[i].de, gamePairs[nextIdx].cz, ""],
+                    up: (i % 2 === 0)
+                });
+            }
+        } else if (requiredPairs === 30) {
+            // Šestistěn - 24 dílků složených do kompaktního pásu
+            for (let i = 0; i < 24; i++) {
+                let p1 = gamePairs[i % 30].de;
+                let p2 = gamePairs[(i + 4) % 30].cz;
+                let p3 = (i % 4 === 0) ? "" : gamePairs[(i + 9) % 30].de;
+                triangles.push({
+                    sides: [p1, p2, p3],
+                    up: (i % 2 === 0)
+                });
+            }
+        }
+
+        // Geometrické parametry mřížky
+        const sideLength = 46; 
+        const h = sideLength * (Math.sqrt(3) / 2); 
+        
+        let currentX = 20;
+        let currentY = 40;
+        
+        doc.setFontSize(14);
+        const themeSelect = document.getElementById("themeSelect");
+        const titulTemy = themeSelect.value ? themeSelect.options[themeSelect.selectedIndex].text : "VLASTNI";
+        doc.text(`TRIMINO SÍT: ${odstranDiakritiku(titulTemy).toUpperCase()}`, 105, 18, { align: "center" });
+        doc.setFontSize(8);
+
+        triangles.forEach((tri, index) => {
+            // Pokud další dílek přeteče okraj A4 na šířku, skočíme o řádek níže a vrátíme se doleva
+            if (currentX + sideLength > 195) {
+                currentX = 20;
+                currentY += h + 15; // Přidáme mezeru mezi pásy
+            }
+
+            // Ochrana přetečení na novou stránku
+            if (currentY + h > 275) {
+                doc.addPage();
+                currentY = 40;
+                currentX = 20;
+            }
+
+            let x1, y1, x2, y2, x3, y3;
+
+            if (tri.up) {
+                x1 = currentX;              y1 = currentY + h;
+                x2 = currentX + sideLength; y2 = currentY + h;
+                x3 = currentX + (sideLength / 2); y3 = currentY;
+            } else {
+                x1 = currentX;              y1 = currentY;
+                x2 = currentX + sideLength; y2 = currentY;
+                x3 = currentX + (sideLength / 2); y3 = currentY + h;
+            }
+
+            // Vykreslení obvodových čar
+            doc.setDrawColor(30).setLineWidth(0.3);
+            doc.line(x1, y1, x2, y2);
+            doc.line(x2, y2, x3, y3);
+            doc.line(x3, y3, x1, y1);
+
+            let txtA = odstranDiakritiku(tri.sides[0] || "");
+            let txtB = odstranDiakritiku(tri.sides[1] || "");
+            let txtC = odstranDiakritiku(tri.sides[2] || "");
+
+            // Přesný render textů podél hran podle orientace trojúhelníku
+            if (tri.up) {
+                // Spodní strana
+                if (txtA) doc.text(txtA, currentX + (sideLength / 2), currentY + h - 2, { align: "center" });
+                // Pravá strana šikmo dolů
+                if (txtB) doc.text(txtB, currentX + (sideLength * 0.75) - 1.5, currentY + (h / 2) + 1, { angle: -60 });
+                // Levá strana šikmo nahoru
+                if (txtC) doc.text(txtC, currentX + (sideLength * 0.25) + 1.5, currentY + (h / 2) - 1, { angle: 60 });
+            } else {
+                // Horní strana (pro otočený trojúhelník)
+                if (txtA) doc.text(txtA, currentX + (sideLength / 2), currentY + 3, { align: "center" });
+                // Pravá strana šikmo nahoru
+                if (txtB) doc.text(txtB, currentX + (sideLength * 0.75) - 1.5, currentY + (h / 2) - 1, { angle: 60 });
+                // Levá strana šikmo dolů
+                if (txtC) doc.text(txtC, currentX + (sideLength * 0.25) + 1.5, currentY + (h / 2) + 1, { angle: -60 });
+            }
+
+            // Číslo dílku pro snadnou kontrolu
+            doc.setTextColor(160);
+            doc.setFontSize(5);
+            let numY = tri.up ? currentY + (h * 0.65) : currentY + (h * 0.35);
+            doc.text((index + 1).toString(), currentX + (sideLength / 2), numY, { align: "center" });
+            doc.setTextColor(0);
+            doc.setFontSize(8);
+
+            // KLÍČOVÝ KROK: Posuneme se pouze o POLOVINU základny dál, čímž do sebe trojúhelníky zaklapnou!
+            currentX += (sideLength / 2);
+        });
+
+        const bezpecnyNazev = odstranDiakritiku(titulTemy.toLowerCase()).replace(/[^a-z0-9]/g, "_");
+        doc.save(`trimino-sit-${bezpecnyNazev}.pdf`);
+    }
+</script>
+
+</body>
+</html>
