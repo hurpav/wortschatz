@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Centrální Trimino Generátor v3.4</title>
+    <title>Centrální Trimino Generátor v3.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #f0f4f8; padding: 20px; color: #333; }
@@ -23,7 +23,7 @@
 <body>
 
 <div class="container">
-    <h1>📐 Trimino Generátor v3.4 (Kompaktní tisková síť)</h1>
+    <h1>📐 Trimino Generátor v3.5 (Kompaktní kosočtverec & Barevné značky)</h1>
     
     <div class="setup-box">
         <div style="flex: 1; min-width: 250px;">
@@ -45,7 +45,7 @@
             <label><strong>2. Typ Trimina:</strong></label><br>
             <select id="triminoType" style="width: 100%; margin-top: 5px;">
                 <option value="9">Dreieck (9 dílků, 9 párů)</option>
-                <option value="12">Stern (12 dílků, 12 párů)</option>
+                <option value="12">Stern (12 dílků, 12 párů - Kosočtverec 3x4)</option>
                 <option value="30">Sechseck (24 dílků, 30 párů)</option>
             </select>
         </div>
@@ -69,6 +69,18 @@
     const githubUser = "hurpav"; 
     const repoName = "wortschatz";
     let activePairs = [];
+
+    // Paleta barev pro rozlišení sad (generuje se automaticky podle tématu)
+    const colorPalette = {
+        "schulsachen": [46, 204, 113],  // Zelená
+        "familie": [52, 152, 219],      // Modrá
+        "berufe": [230, 126, 34],       // Oranžová
+        "hobbys": [155, 89, 182],       // Fialová
+        "sport": [241, 196, 15],        // Žlutá
+        "wochentage": [231, 76, 60],     // Červená
+        "essen": [26, 188, 156],        // Tyrkysová
+        "default": [127, 140, 141]      // Šedá
+    };
 
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("themeSelect").addEventListener("change", loadFromGitHub);
@@ -164,68 +176,77 @@
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         doc.setFont("Courier", "bold");
 
+        const themeValue = document.getElementById("themeSelect").value.replace('.json', '') || "default";
+        const labelText = themeValue.substring(0, 5).toUpperCase(); // Zkratka tématu (např. SCHUL)
+        const rgbColor = colorPalette[themeValue] || colorPalette["default"];
+
         let triangles = [];
 
         if (requiredPairs === 9) {
+            // Malý trojúhelník (9 dílků)
             triangles = [
-                { sides: [gamePairs[0].de, "", ""], up: true },
-                { sides: [gamePairs[0].cz, gamePairs[1].de, ""], up: false },
-                { sides: ["", gamePairs[1].cz, gamePairs[2].de], up: true },
-                { sides: [gamePairs[2].cz, "", ""], up: false },
-                { sides: [gamePairs[3].de, gamePairs[4].cz, ""], up: true },
-                { sides: ["", gamePairs[3].cz, gamePairs[5].de], up: false },
-                { sides: [gamePairs[5].cz, "", gamePairs[6].de], up: true },
-                { sides: ["", gamePairs[7].de, gamePairs[8].cz], up: false },
-                { sides: [gamePairs[8].de, "", ""], up: true }
+                { sides: [gamePairs[0].de, "", ""], up: true, row: 0, col: 0 },
+                { sides: [gamePairs[0].cz, gamePairs[1].de, ""], up: false, row: 0, col: 1 },
+                { sides: ["", gamePairs[1].cz, gamePairs[2].de], up: true, row: 0, col: 2 },
+                { sides: [gamePairs[2].cz, "", ""], up: false, row: 0, col: 3 },
+                { sides: [gamePairs[3].de, gamePairs[4].cz, ""], up: true, row: 1, col: 0 },
+                { sides: ["", gamePairs[3].cz, gamePairs[5].de], up: false, row: 1, col: 1 },
+                { sides: [gamePairs[5].cz, "", gamePairs[6].de], up: true, row: 1, col: 2 },
+                { sides: ["", gamePairs[7].de, gamePairs[8].cz], up: false, row: 1, col: 3 },
+                { sides: [gamePairs[8].de, "", ""], up: true, row: 2, col: 0 }
             ];
         } else if (requiredPairs === 12) {
-            // Hvězda - 12 propojených dílků v pásu
-            for (let i = 0; i < 12; i++) {
-                let nextIdx = (i + 1) % 12;
-                triangles.push({
-                    sides: [gamePairs[i].de, gamePairs[nextIdx].cz, ""],
-                    up: (i % 2 === 0)
-                });
+            // STERN: Hvězda složená do kompaktního kosočtverce 3 řádky x 4 sloupce (12 dílků)
+            let idx = 0;
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 4; c++) {
+                    let nextIdx = (idx + 1) % 12;
+                    triangles.push({
+                        sides: [gamePairs[idx].de, gamePairs[nextIdx].cz, ""],
+                        up: ((r + c) % 2 === 0),
+                        row: r,
+                        col: c
+                    });
+                    idx++;
+                }
             }
         } else if (requiredPairs === 30) {
-            // Šestistěn - 24 dílků složených do kompaktního pásu
-            for (let i = 0; i < 24; i++) {
-                let p1 = gamePairs[i % 30].de;
-                let p2 = gamePairs[(i + 4) % 30].cz;
-                let p3 = (i % 4 === 0) ? "" : gamePairs[(i + 9) % 30].de;
-                triangles.push({
-                    sides: [p1, p2, p3],
-                    up: (i % 2 === 0)
-                });
+            // Sechseck (24 dílků)
+            let idx = 0;
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 6; c++) {
+                    let p1 = gamePairs[idx % 30].de;
+                    let p2 = gamePairs[(idx + 4) % 30].cz;
+                    let p3 = (idx % 4 === 0) ? "" : gamePairs[(idx + 9) % 30].de;
+                    triangles.push({
+                        sides: [p1, p2, p3],
+                        up: ((r + c) % 2 === 0),
+                        row: r,
+                        col: c
+                    });
+                    idx++;
+                }
             }
         }
 
-        // Geometrické parametry mřížky
-        const sideLength = 46; 
+        const sideLength = 45; 
         const h = sideLength * (Math.sqrt(3) / 2); 
         
-        let currentX = 20;
-        let currentY = 40;
-        
+        // Výchozí bod bloku na stránce
+        const blockStartX = 35;
+        const blockStartY = 50;
+
         doc.setFontSize(14);
         const themeSelect = document.getElementById("themeSelect");
         const titulTemy = themeSelect.value ? themeSelect.options[themeSelect.selectedIndex].text : "VLASTNI";
-        doc.text(`TRIMINO SÍT: ${odstranDiakritiku(titulTemy).toUpperCase()}`, 105, 18, { align: "center" });
-        doc.setFontSize(8);
+        doc.text(`TRIMINO BLOK: ${odstranDiakritiku(titulTemy).toUpperCase()}`, 105, 18, { align: "center" });
+        doc.setFontSize(7.5);
 
-        triangles.forEach((tri, index) => {
-            // Pokud další dílek přeteče okraj A4 na šířku, skočíme o řádek níže a vrátíme se doleva
-            if (currentX + sideLength > 195) {
-                currentX = 20;
-                currentY += h + 15; // Přidáme mezeru mezi pásy
-            }
-
-            // Ochrana přetečení na novou stránku
-            if (currentY + h > 275) {
-                doc.addPage();
-                currentY = 40;
-                currentX = 20;
-            }
+        triangles.forEach((tri) => {
+            // Výpočet X a Y souřadnic na základě řádku a sloupce v kosočtvercové síti
+            // Každý sloupec se posouvá o polovinu základny doprava. Každý řádek se posouvá dolů o výšku h a mírně doprava/doleva.
+            let currentX = blockStartX + (tri.col * (sideLength / 2)) + (tri.row * (sideLength / 2));
+            let currentY = blockStartY + (tri.row * h);
 
             let x1, y1, x2, y2, x3, y3;
 
@@ -239,8 +260,23 @@
                 x3 = currentX + (sideLength / 2); y3 = currentY + h;
             }
 
-            // Vykreslení obvodových čar
-            doc.setDrawColor(30).setLineWidth(0.3);
+            // 1. Vykreslení barevného rozlišovacího středu (malý trojúhelníček v jednom rohu)
+            doc.setFillColor(rgbColor[0], rgbColor[1], rgbColor[2]);
+            const markerSize = 6; // velikost barevné špičky v mm
+            if (tri.up) {
+                // Vybarvíme horní špičku
+                let mx1 = x3 - (markerSize / 2), my1 = y3 + (markerSize * (Math.sqrt(3)/2));
+                let mx2 = x3 + (markerSize / 2), my2 = y3 + (markerSize * (Math.sqrt(3)/2));
+                doc.triangle(x3, y3, mx1, my1, mx2, my2, "F");
+            } else {
+                // Vybarvíme spodní špičku
+                let mx1 = x3 - (markerSize / 2), my1 = y3 - (markerSize * (Math.sqrt(3)/2));
+                let mx2 = x3 + (markerSize / 2), my2 = y3 - (markerSize * (Math.sqrt(3)/2));
+                doc.triangle(x3, y3, mx1, my1, mx2, my2, "F");
+            }
+
+            // 2. Vykreslení hlavních řezných čar
+            doc.setDrawColor(40).setLineWidth(0.3);
             doc.line(x1, y1, x2, y2);
             doc.line(x2, y2, x3, y3);
             doc.line(x3, y3, x1, y1);
@@ -249,37 +285,28 @@
             let txtB = odstranDiakritiku(tri.sides[1] || "");
             let txtC = odstranDiakritiku(tri.sides[2] || "");
 
-            // Přesný render textů podél hran podle orientace trojúhelníku
+            // 3. Vykreslení textů slovíček podél hran
             if (tri.up) {
-                // Spodní strana
-                if (txtA) doc.text(txtA, currentX + (sideLength / 2), currentY + h - 2, { align: "center" });
-                // Pravá strana šikmo dolů
-                if (txtB) doc.text(txtB, currentX + (sideLength * 0.75) - 1.5, currentY + (h / 2) + 1, { angle: -60 });
-                // Levá strana šikmo nahoru
-                if (txtC) doc.text(txtC, currentX + (sideLength * 0.25) + 1.5, currentY + (h / 2) - 1, { angle: 60 });
+                if (txtA) doc.text(txtA, currentX + (sideLength / 2), currentY + h - 2.5, { align: "center" });
+                if (txtB) doc.text(txtB, currentX + (sideLength * 0.75) - 1.8, currentY + (h / 2) + 1.2, { angle: -60 });
+                if (txtC) doc.text(txtC, currentX + (sideLength * 0.25) + 1.8, currentY + (h / 2) - 1.2, { angle: 60 });
             } else {
-                // Horní strana (pro otočený trojúhelník)
-                if (txtA) doc.text(txtA, currentX + (sideLength / 2), currentY + 3, { align: "center" });
-                // Pravá strana šikmo nahoru
-                if (txtB) doc.text(txtB, currentX + (sideLength * 0.75) - 1.5, currentY + (h / 2) - 1, { angle: 60 });
-                // Levá strana šikmo dolů
-                if (txtC) doc.text(txtC, currentX + (sideLength * 0.25) + 1.5, currentY + (h / 2) + 1, { angle: -60 });
+                if (txtA) doc.text(txtA, currentX + (sideLength / 2), currentY + 3.5, { align: "center" });
+                if (txtB) doc.text(txtB, currentX + (sideLength * 0.75) - 1.8, currentY + (h / 2) - 1.2, { angle: 60 });
+                if (txtC) doc.text(txtC, currentX + (sideLength * 0.25) + 1.8, currentY + (h / 2) + 1.2, { angle: -60 });
             }
 
-            // Číslo dílku pro snadnou kontrolu
-            doc.setTextColor(160);
+            // 4. Vytištění zkratky tématu doprostřed kartičky místo čísla
+            doc.setTextColor(130);
             doc.setFontSize(5);
-            let numY = tri.up ? currentY + (h * 0.65) : currentY + (h * 0.35);
-            doc.text((index + 1).toString(), currentX + (sideLength / 2), numY, { align: "center" });
+            let labelY = tri.up ? currentY + (h * 0.65) : currentY + (h * 0.4);
+            doc.text(labelText, currentX + (sideLength / 2), labelY, { align: "center" });
             doc.setTextColor(0);
-            doc.setFontSize(8);
-
-            // KLÍČOVÝ KROK: Posuneme se pouze o POLOVINU základny dál, čímž do sebe trojúhelníky zaklapnou!
-            currentX += (sideLength / 2);
+            doc.setFontSize(7.5);
         });
 
         const bezpecnyNazev = odstranDiakritiku(titulTemy.toLowerCase()).replace(/[^a-z0-9]/g, "_");
-        doc.save(`trimino-sit-${bezpecnyNazev}.pdf`);
+        doc.save(`trimino-kosoctverec-${bezpecnyNazev}.pdf`);
     }
 </script>
 
