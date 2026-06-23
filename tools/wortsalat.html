@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wortsalat Generator v1.0</title>
+    <title>Wortsalat Generator v1.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -13,6 +13,7 @@
             --card: #ffffff;
             --text: #1e293b;
             --border: #cbd5e1;
+            --accent: #d97706;
         }
 
         body {
@@ -141,6 +142,7 @@
             height: 24px;
             text-transform: uppercase;
             user-select: none;
+            transition: background-color 0.3s;
         }
 
         .hints-section {
@@ -171,8 +173,13 @@
             text-overflow: ellipsis;
         }
 
+        .btn-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+        }
+
         .btn {
-            background: var(--primary);
             color: white;
             border: none;
             padding: 12px 20px;
@@ -184,14 +191,14 @@
             width: 100%;
         }
 
-        .btn:hover {
-            background: var(--primary-hover);
-        }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        
+        .btn-accent { background: var(--accent); }
+        .btn-accent:hover { background: #b45309; }
 
-        .loading-text {
-            color: #0f766e;
-            font-style: italic;
-            font-size: 0.9rem;
+        .btn-accent.active {
+            background: #dc2626;
         }
     </style>
 </head>
@@ -211,12 +218,6 @@
                 <select id="themeSelect" onchange="loadTheme()">
                     <option value="schulsachen">Schulsachen (Pomůcky)</option>
                     <option value="familie">Familie (Rodina)</option>
-                    <option value="berufe">Berufe (Povolání)</option>
-                    <option value="hobbys">Hobbys (Záliby)</option>
-                    <option value="sport">Sportarten (Sporty)</option>
-                    <option value="wochentage">Wochentage (Dny v týdnu)</option>
-                    <option value="essen">Essen (Jídlo)</option>
-                    <option value="stundenplan">Stundenplan / Monate</option>
                 </select>
             </div>
             <div class="form-group">
@@ -238,7 +239,10 @@
             </div>
         </div>
         
-        <button class="btn" onclick="generatePDF()">📄 Vygenerovat PDF pro tisk (2x A5)</button>
+        <div class="btn-container">
+            <button class="btn btn-primary" onclick="generatePDF()">📄 Vygenerovat PDF pro tisk (2x A5)</button>
+            <button class="btn btn-accent" id="toggleKeyBtn" onclick="toggleKey()">👁️ Zobrazit klíč náhledu</button>
+        </div>
     </div>
 
     <div class="card">
@@ -265,67 +269,73 @@
 </div>
 
 <script>
+    // Lokální databáze pro offline běh bez CORS chyb
+    const localDatabase = {
+        "schulsachen": [
+            {"id": 1, "de": "der Rucksack", "cz": "batoh"},
+            {"id": 2, "de": "das Mäppchen", "cz": "penál"},
+            {"id": 3, "de": "das Heft", "cz": "sešit"},
+            {"id": 4, "de": "das Lehrbuch", "cz": "učebnice"},
+            {"id": 5, "de": "der Textmarker", "cz": "zvýrazňovač"},
+            {"id": 6, "de": "der Radiergummi", "cz": "guma"},
+            {"id": 7, "de": "der Spitzer", "cz": "ořezávátko"},
+            {"id": 8, "de": "das Lineal", "cz": "pravítko"},
+            {"id": 9, "de": "der Kleber", "cz": "lepidlo"}
+        ],
+        "familie": [
+            {"id": 1, "de": "die Mutter", "cz": "matka"},
+            {"id": 2, "de": "der Vater", "cz": "otec"},
+            {"id": 3, "de": "der Bruder", "cz": "bratr"},
+            {"id": 4, "de": "die Schwester", "cz": "sestra"},
+            {"id": 5, "de": "die Oma", "cz": "babička"},
+            {"id": 6, "de": "der Opa", "cz": "dědeček"},
+            {"id": 7, "de": "der Sohn", "cz": "syn"},
+            {"id": 8, "de": "die Tochter", "cz": "dcera"}
+        ]
+    };
+
     let allFetchedItems = []; 
-    let activeWords = [];     // Očištěná čistá slova pro generování
-    
-    // Globální objekty pro uložení vygenerovaných dat obou žáků (aby náhled odpovídal tisku)
+    let activeWords = [];     
     let studentLeftData = null;
     let studentRightData = null;
+    let showKey = false;
+
+    // Paleta jemných barev pro zvýraznění slov v klíči
+    const solutionColors = [
+        "#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", 
+        "#cffafe", "#e9d5ff", "#fca5a5", "#ccfbf1", "#e2e8f0"
+    ];
 
     document.addEventListener("DOMContentLoaded", function() {
         loadTheme();
     });
 
-    async function loadTheme() {
+    function loadTheme() {
         const key = document.getElementById('themeSelect').value;
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
-        
-        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
-        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+        allFetchedItems = localDatabase[key] || [];
 
-        try {
-            let response = await fetch(primaryUrl);
-            if (!response.ok) response = await fetch(backupUrl);
-            if (!response.ok) throw new Error("JSON file not found.");
-
-            const data = await response.json();
-            let rawData = data[key] || data.words || data;
-            
-            if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
-                const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
-                allFetchedItems = firstKey ? rawData[firstKey] : Object.values(rawData).find(v => Array.isArray(v)) || [];
-            } else {
-                allFetchedItems = Array.isArray(rawData) ? rawData : [];
-            }
-
-            if (allFetchedItems.length > 0) {
-                const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
-                document.getElementById('idFrom').value = Math.min(...ids);
-                document.getElementById('idTo').value = Math.min(Math.min(...ids) + 9, Math.max(...ids)); 
-            }
-            processWords();
-        } catch (err) {
-            console.error("Chyba načítání dat:", err);
+        if (allFetchedItems.length > 0) {
+            const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
+            document.getElementById('idFrom').value = Math.min(...ids);
+            document.getElementById('idTo').value = Math.max(...ids); 
         }
+        processWords();
     }
 
     function processWords() {
         const fromId = parseInt(document.getElementById('idFrom').value) || 1;
         const toId = parseInt(document.getElementById('idTo').value) || 99;
+        const size = parseInt(document.getElementById('gridSize').value) || 12;
 
-        // Filtrujeme položky a čistíme slova (odstraníme člen, mezery, převedeme na velká)
         activeWords = allFetchedItems
             .filter(item => {
-                const id = parseInt(item.id);
-                return id >= fromId && id <= toId;
+                const id = parseInt(item.id, 10);
+                return !isNaN(id) && id >= fromId && id <= toId;
             })
             .map(item => {
                 let cleanDe = (item.de || "").trim();
-                // Pro jistotu vyčistíme případný natvrdo zapsaný člen na začátku
                 cleanDe = cleanDe.replace(/^(der|die|das)\s+/i, ""); 
                 
-                // Odstranění diakritiky, mezer, pomlček pro vyhledávací matici
                 const searchString = cleanDe.toUpperCase()
                     .replace(/Ä/g, "AE").replace(/Ö/g, "OE").replace(/Ü/g, "UE").replace(/ß/g, "SS")
                     .replace(/[^A-Z]/g, "");
@@ -336,10 +346,8 @@
                     searchName: searchString
                 };
             })
-            .filter(w => w.searchName.length > 0);
+            .filter(w => w.searchName.length > 0 && w.searchName.length <= size);
 
-        // Vygenerujeme dvě nezávislé osmisměrky
-        const size = parseInt(document.getElementById('gridSize').value) || 12;
         studentLeftData = generatePuzzle(activeWords, size);
         studentRightData = generatePuzzle(activeWords, size);
 
@@ -347,24 +355,21 @@
     }
 
     function generatePuzzle(words, size) {
-        // Inicializace prázdné matice
         let grid = Array(size).fill(null).map(() => Array(size).fill(''));
+        // Matice pro uložení ID slova na konkrétních souřadnicích (pro potřeby klíče)
+        let solutionMap = Array(size).fill(null).map(() => Array(size).fill(-1));
         
-        // Směry: [pohyb_Y, pohyb_X]
-        // 4 základní směry dolů a doprava: Vpravo, Dolů, Diagonálně vpravo-dolů, Diagonálně vlevo-dolů
         const directions = [
-            [0, 1],   // Horizontálně (vpravo)
-            [1, 0],   // Vertikálně (dolů)
-            [1, 1],   // Diagonálně (vpravo dolů)
-            [1, -1]   // Diagonálně (vlevo dolů)
+            [0, 1],   // Vpravo
+            [1, 0],   // Dolů
+            [1, 1],   // Diagonálně vpravo dolů
+            [1, -1]   // Diagonálně vlevo dolů
         ];
 
         let placedWords = [];
-
-        // Pokusíme se umístit každé slovo (delší slova dříve pro snazší křížení)
         const sortedWords = [...words].sort((a, b) => b.searchName.length - a.searchName.length);
 
-        sortedWords.forEach(word => {
+        sortedWords.forEach((word, wordIdx) => {
             let wordPlaced = false;
             let attempts = 0;
             const maxAttempts = 100;
@@ -372,20 +377,17 @@
             while (!wordPlaced && attempts < maxAttempts) {
                 attempts++;
                 const dir = directions[Math.floor(Math.random() * directions.length)];
-                
-                // Určení počátečních limitů podle směru
                 let startY = Math.floor(Math.random() * size);
                 let startX = Math.floor(Math.random() * size);
 
                 if (canPlaceWord(grid, word.searchName, startY, startX, dir, size)) {
-                    placeWord(grid, word.searchName, startY, startX, dir);
+                    placeWord(grid, solutionMap, word.searchName, startY, startX, dir, wordIdx);
                     placedWords.push(word);
                     wordPlaced = true;
                 }
             }
         });
 
-        // Vyplnění prázdných míst náhodnými písmeny německé abecedy
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ";
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
@@ -395,34 +397,43 @@
             }
         }
 
-        return { grid, placedWords, size };
+        return { grid, solutionMap, placedWords, size };
     }
 
     function canPlaceWord(grid, wordStr, startY, startX, dir, size) {
         let currY = startY;
         let currX = startX;
-
         for (let i = 0; i < wordStr.length; i++) {
-            // Kontrola mezí matice
             if (currY < 0 || currY >= size || currX < 0 || currX >= size) return false;
-            
-            // Kontrola kolize znaků
             if (grid[currY][currX] !== '' && grid[currY][currX] !== wordStr[i]) return false;
-            
             currY += dir[0];
             currX += dir[1];
         }
         return true;
     }
 
-    function placeWord(grid, wordStr, startY, startX, dir) {
+    function placeWord(grid, solutionMap, wordStr, startY, startX, dir, wordIdx) {
         let currY = startY;
         let currX = startX;
         for (let i = 0; i < wordStr.length; i++) {
             grid[currY][currX] = wordStr[i];
+            solutionMap[currY][currX] = wordIdx; // Priradíme index slova pro podbarvení
             currY += dir[0];
             currX += dir[1];
         }
+    }
+
+    function toggleKey() {
+        showKey = !showKey;
+        const btn = document.getElementById('toggleKeyBtn');
+        if (showKey) {
+            btn.textContent = "🙈 Skrýt klíč náhledu";
+            btn.classList.add('active');
+        } else {
+            btn.textContent = "👁️ Zobrazit klíč náhledu";
+            btn.classList.remove('active');
+        }
+        renderHtmlPreview();
     }
 
     function renderHtmlPreview() {
@@ -438,6 +449,14 @@
                     const cell = document.createElement('div');
                     cell.className = 'grid-cell';
                     cell.textContent = puzzleData.grid[r][c];
+                    
+                    // Pokud je zapnutý klíč a políčko obsahuje schované slovo
+                    if (showKey && puzzleData.solutionMap[r][c] !== -1) {
+                        const colorIdx = puzzleData.solutionMap[r][c] % solutionColors.length;
+                        cell.style.backgroundColor = solutionColors[colorIdx];
+                        cell.style.border = "1px solid #000";
+                    }
+                    
                     container.appendChild(cell);
                 }
             }
@@ -446,8 +465,6 @@
         const renderHints = (containerId, puzzleData) => {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
-            
-            // Seřadíme nápovědy podle abecedy pro snazší hledání žáků
             const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
 
             if (sortedHints.length === 0) {
@@ -473,38 +490,32 @@
         if (!studentLeftData || !studentRightData) return;
         const { jsPDF } = window.jspdf;
         
-        // Na šířku A4 (297 x 210 mm)
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         const halfWidth = 297 / 2;
         const themeText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
 
         function drawHalfPage(offsetX, puzzleData) {
-            // Hlavička
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(16);
-            doc.setTextColor(15, 118, 110); // Teal barva
+            doc.setTextColor(15, 118, 110); 
             doc.text("WORTSALAT", offsetX + 12, 16);
             
             doc.setFontSize(10);
             doc.setTextColor(71, 85, 105);
             doc.text(`Thema: ${themeText}`, offsetX + 12, 22);
 
-            // Jméno / Třída
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(9);
             doc.text("Name: ______________________", offsetX + 12, 30);
             doc.text("Klasse: _________", offsetX + halfWidth - 40, 30);
 
-            // Vykreslení čtvercové sítě
             const size = puzzleData.size;
             const startX = offsetX + 12;
             const startY = 36;
-            
-            // Výpočet velikosti buňky tak, aby se síť vešla ideálně na výšku
             const cellSize = Math.min(7.5, (halfWidth - 24) / size); 
             
             doc.setFont("Helvetica", "bold");
-            doc.setFontSize(cellSize * 1.4); // Dynamický font vzhledem k velikosti boxu
+            doc.setFontSize(cellSize * 1.4); 
             doc.setLineWidth(0.2);
             doc.setDrawColor(71, 85, 105);
 
@@ -513,30 +524,26 @@
                     const x = startX + (c * cellSize);
                     const y = startY + (r * cellSize);
                     
-                    // Boxík pro písmeno
                     doc.setFillColor(255, 255, 255);
                     doc.rect(x, y, cellSize, cellSize, 'F');
                     doc.rect(x, y, cellSize, cellSize, 'S');
                     
-                    // Znak centrovat uvnitř buňky
                     const char = puzzleData.grid[r][c];
                     const textWidth = doc.getTextWidth(char);
                     const textX = x + (cellSize - textWidth) / 2;
-                    const textY = y + (cellSize + (cellSize * 0.3)) / 2; // Optický střed Y
+                    const textY = y + (cellSize + (cellSize * 0.3)) / 2; 
                     
                     doc.setTextColor(30, 41, 59);
                     doc.text(char, textX, textY);
                 }
             }
 
-            // Nápovědy pod osmisměrkou
             const hintsY = startY + (size * cellSize) + 8;
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(10);
             doc.setTextColor(15, 118, 110);
             doc.text("Finde tyto výrazy (německy bez členu):", startX, hintsY);
 
-            // Seřazení nápověd abecedně podle CZ
             const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
             
             doc.setFont("Helvetica", "normal");
@@ -547,31 +554,25 @@
             sortedHints.forEach((word, idx) => {
                 const c = idx % 3;
                 const r = Math.floor(idx / 3);
-                
                 const hX = startX + (c * colWidth);
                 const hY = hintsY + 5 + (r * 5);
                 
-                // Pokud by hrozilo přetečení spodního okraje A5
                 if (hY < 200) {
                     doc.text(`[ ] ${word.cz}`, hX, hY);
                 }
             });
         }
 
-        // Kreslíme levou stranu (Žák 1)
         drawHalfPage(0, studentLeftData);
 
-        // Středová dělící čára pro řezání papíru
         doc.setLineWidth(0.3);
         doc.setDrawColor(148, 163, 184);
         doc.setLineDashPattern([2, 2], 0);
         doc.line(halfWidth, 0, halfWidth, 210);
-        doc.setLineDashPattern([], 0); // Reset dash vzoru
+        doc.setLineDashPattern([], 0); 
 
-        // Kreslíme pravou stranu (Žák 2)
         drawHalfPage(halfWidth, studentRightData);
 
-        // Uložení souboru
         const cleanThemeName = themeText.toLowerCase().replace(/[^a-z0-9]/g, "-");
         doc.save(`wortsalat-2xA5-${cleanThemeName}.pdf`);
     }
