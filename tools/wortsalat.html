@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wortsalat Generator v1.1</title>
+    <title>Wortsalat Generator v1.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -41,7 +41,7 @@
 
         .grid-config {
             display: grid;
-            grid-template-columns: 1.5fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
@@ -75,13 +75,18 @@
             font-size: 0.9rem;
         }
 
-        select, input {
+        select, input, textarea {
             width: 100%;
             padding: 8px;
             border: 1px solid var(--border);
             border-radius: 4px;
             box-sizing: border-box;
             font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
         }
 
         .range-group {
@@ -92,6 +97,27 @@
 
         .range-group input {
             text-align: center;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .radio-option input {
+            width: auto;
         }
 
         .preview-split {
@@ -197,9 +223,9 @@
         .btn-accent { background: var(--accent); }
         .btn-accent:hover { background: #b45309; }
 
-        .btn-accent.active {
-            background: #dc2626;
-        }
+        .btn-accent.active { background: #dc2626; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -207,49 +233,70 @@
 <div class="container">
     <header>
         <h1>🔠 Wortsalat - Generátor osmisměrek</h1>
-        <p>Vytváří unikátní šifrované mřížky pro dva žáky na jednu stránku A4 (2x A5 na šířku).</p>
+        <p>Vytváří 2 identické kopie mřížky na jednu stránku A4 (2x A5 na šířku).</p>
     </header>
 
     <div class="card">
-        <h2>1. Nastavení parametrů osmisměrky</h2>
-        <div class="grid-config">
+        <h2>1. Zdroj slovíček</h2>
+        <div class="radio-group">
+            <label class="radio-option">
+                <input type="radio" name="sourceMode" value="db" checked onchange="toggleSourceMode()"> 
+                🗄️ Vybrat ze seznamu témat
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="sourceMode" value="manual" onchange="toggleSourceMode()"> 
+                ✍️ Vložit vlastní slovíčka
+            </label>
+        </div>
+
+        <div id="sectionDb" class="grid-config">
             <div class="form-group">
                 <label for="themeSelect">Zvolit téma:</label>
                 <select id="themeSelect" onchange="loadTheme()">
                     <option value="schulsachen">Schulsachen (Pomůcky)</option>
                     <option value="familie">Familie (Rodina)</option>
+                    <option value="berufe">Berufe (Povolání)</option>
+                    <option value="hobbys">Hobbys (Záliby)</option>
+                    <option value="sport">Sportarten (Sporty)</option>
+                    <option value="wochentage">Wochentage (Dny v týdnu)</option>
+                    <option value="essen">Essen (Jídlo)</option>
+                    <option value="stundenplan">Stundenplan / Monate</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Rozsah ID slovíček:</label>
-                <div class="range-group">
-                    <input type="number" id="idFrom" min="1" value="1" onchange="processWords()">
-                    <span>až</span>
-                    <input type="number" id="idTo" min="1" value="10" onchange="processWords()">
+                <label>Počet náhodných slov:</label>
+                <div class="range-group" style="max-width: 150px;">
+                    <input type="number" id="randomCount" min="3" max="20" value="10" onchange="processWords()">
                 </div>
             </div>
-            <div class="form-group">
-                <label for="gridSize">Velikost sítě (čtverec):</label>
-                <select id="gridSize" onchange="processWords()">
-                    <option value="11">11 x 11 písmen</option>
-                    <option value="12" selected>12 x 12 písmen</option>
-                    <option value="13">13 x 13 písmen</option>
-                    <option value="14">14 x 14 písmen</option>
-                </select>
-            </div>
+        </div>
+
+        <div id="sectionManual" class="form-group hidden">
+            <label for="customWordsInput">Zadejte slovíčka (jedno na řádek, formát: Německy - Česky):</label>
+            <textarea id="customWordsInput" placeholder="der Hund - pes&#10;die Katze - kočka&#10;das Pferd - kůň" oninput="processWords()"></textarea>
+        </div>
+
+        <div class="form-group" style="max-width: 300px;">
+            <label for="gridSize">Velikost sítě (čtverec):</label>
+            <select id="gridSize" onchange="processWords()">
+                <option value="11">11 x 11 písmen</option>
+                <option value="12" selected>12 x 12 písmen</option>
+                <option value="13">13 x 13 písmen</option>
+                <option value="14">14 x 14 písmen</option>
+            </select>
         </div>
         
         <div class="btn-container">
-            <button class="btn btn-primary" onclick="generatePDF()">📄 Vygenerovat PDF pro tisk (2x A5)</button>
+            <button class="btn btn-primary" onclick="generatePDF()">📄 Vygenerovat PDF pro tisk (2x stejné A5)</button>
             <button class="btn btn-accent" id="toggleKeyBtn" onclick="toggleKey()">👁️ Zobrazit klíč náhledu</button>
         </div>
     </div>
 
     <div class="card">
-        <h2>Živý náhled (Unikátní mřížky pro Žáka 1 a Žáka 2)</h2>
+        <h2>Živý náhled (Identické mřížky pro snadné rozstřižení A4)</h2>
         <div class="preview-split" id="previewSplit">
             <div class="preview-page" id="pageLeft">
-                <div class="preview-title">Wortsalat</div>
+                <div class="preview-title">Wortsalat (Kopie 1)</div>
                 <div class="wordsearch-grid" id="gridLeft"></div>
                 <div class="hints-section">
                     <div class="hints-title">Finde tyto výrazy (v němčině bez členu):</div>
@@ -257,7 +304,7 @@
                 </div>
             </div>
             <div class="preview-page" id="pageRight">
-                <div class="preview-title">Wortsalat</div>
+                <div class="preview-title">Wortsalat (Kopie 2)</div>
                 <div class="wordsearch-grid" id="gridRight"></div>
                 <div class="hints-section">
                     <div class="hints-title">Finde tyto výrazy (v němčině bez členu):</div>
@@ -269,7 +316,7 @@
 </div>
 
 <script>
-    // Lokální databáze pro offline běh bez CORS chyb
+    // Lokální záložní databáze pro offline běh
     const localDatabase = {
         "schulsachen": [
             {"id": 1, "de": "der Rucksack", "cz": "batoh"},
@@ -296,42 +343,114 @@
 
     let allFetchedItems = []; 
     let activeWords = [];     
-    let studentLeftData = null;
-    let studentRightData = null;
+    let studentLeftData = null; // Použijeme jako společná data pro obě strany
     let showKey = false;
 
-    // Paleta jemných barev pro zvýraznění slov v klíči
     const solutionColors = [
         "#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", 
         "#cffafe", "#e9d5ff", "#fca5a5", "#ccfbf1", "#e2e8f0"
     ];
 
+    // Pomocná funkce pro odstranění české diakritiky (pro PDF kompatibilitu)
+    function removeDiacritics(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         loadTheme();
     });
 
-    function loadTheme() {
-        const key = document.getElementById('themeSelect').value;
-        allFetchedItems = localDatabase[key] || [];
-
-        if (allFetchedItems.length > 0) {
-            const ids = allFetchedItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
-            document.getElementById('idFrom').value = Math.min(...ids);
-            document.getElementById('idTo').value = Math.max(...ids); 
+    function toggleSourceMode() {
+        const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+        if (mode === 'db') {
+            document.getElementById('sectionDb').classList.remove('hidden');
+            document.getElementById('sectionManual').classList.add('hidden');
+            loadTheme();
+        } else {
+            document.getElementById('sectionDb').classList.add('hidden');
+            document.getElementById('sectionManual').classList.remove('hidden');
+            processWords();
         }
+    }
+
+    async function loadTheme() {
+        const key = document.getElementById('themeSelect').value;
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
+        
+        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
+        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+
+        try {
+            let response = await fetch(primaryUrl);
+            if (!response.ok) response = await fetch(backupUrl);
+            if (!response.ok) throw new Error("JSON file not found / CORS lock.");
+
+            const data = await response.json();
+            let rawData = data[key] || data.words || data;
+            
+            if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
+                const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                allFetchedItems = firstKey ? rawData[firstKey] : Object.values(rawData).find(v => Array.isArray(v)) || [];
+            } else {
+                allFetchedItems = Array.isArray(rawData) ? rawData : [];
+            }
+        } catch (err) {
+            console.warn("Externí JSON nedostupný, načítám z lokální databáze.");
+            allFetchedItems = localDatabase[key] || [];
+        }
+
+        const randInput = document.getElementById('randomCount');
+        if (allFetchedItems.length > 0) {
+            randInput.max = allFetchedItems.length;
+            randInput.value = Math.min(10, allFetchedItems.length);
+        }
+        
         processWords();
     }
 
+    function parseManualWords() {
+        const text = document.getElementById('customWordsInput').value;
+        const lines = text.split('\n');
+        let parsed = [];
+        
+        lines.forEach((line, index) => {
+            if (!line.trim()) return;
+            let de = "", cz = "";
+            
+            if (line.includes('-')) {
+                const parts = line.split('-');
+                de = parts[0].trim();
+                cz = parts[1].trim();
+            } else if (line.includes(';')) {
+                const parts = line.split(';');
+                de = parts[0].trim();
+                cz = parts[1].trim();
+            } else {
+                de = line.trim();
+                cz = line.trim();
+            }
+            if (de) parsed.push({ id: index + 1, de: de, cz: cz });
+        });
+        return parsed;
+    }
+
     function processWords() {
-        const fromId = parseInt(document.getElementById('idFrom').value) || 1;
-        const toId = parseInt(document.getElementById('idTo').value) || 99;
+        const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+        let poolWords = [];
+
+        if (mode === 'db') {
+            poolWords = [...allFetchedItems];
+            const count = parseInt(document.getElementById('randomCount').value) || 10;
+            poolWords.sort(() => 0.5 - Math.random());
+            poolWords = poolWords.slice(0, count);
+        } else {
+            poolWords = parseManualWords();
+        }
+
         const size = parseInt(document.getElementById('gridSize').value) || 12;
 
-        activeWords = allFetchedItems
-            .filter(item => {
-                const id = parseInt(item.id, 10);
-                return !isNaN(id) && id >= fromId && id <= toId;
-            })
+        activeWords = poolWords
             .map(item => {
                 let cleanDe = (item.de || "").trim();
                 cleanDe = cleanDe.replace(/^(der|die|das)\s+/i, ""); 
@@ -348,22 +467,18 @@
             })
             .filter(w => w.searchName.length > 0 && w.searchName.length <= size);
 
+        // Vygenerujeme pouze JEDNU mřížku, kterou použijeme pro obě strany
         studentLeftData = generatePuzzle(activeWords, size);
-        studentRightData = generatePuzzle(activeWords, size);
 
         renderHtmlPreview();
     }
 
     function generatePuzzle(words, size) {
         let grid = Array(size).fill(null).map(() => Array(size).fill(''));
-        // Matice pro uložení ID slova na konkrétních souřadnicích (pro potřeby klíče)
         let solutionMap = Array(size).fill(null).map(() => Array(size).fill(-1));
         
         const directions = [
-            [0, 1],   // Vpravo
-            [1, 0],   // Dolů
-            [1, 1],   // Diagonálně vpravo dolů
-            [1, -1]   // Diagonálně vlevo dolů
+            [0, 1], [1, 0], [1, 1], [1, -1]
         ];
 
         let placedWords = [];
@@ -417,7 +532,7 @@
         let currX = startX;
         for (let i = 0; i < wordStr.length; i++) {
             grid[currY][currX] = wordStr[i];
-            solutionMap[currY][currX] = wordIdx; // Priradíme index slova pro podbarvení
+            solutionMap[currY][currX] = wordIdx; 
             currY += dir[0];
             currX += dir[1];
         }
@@ -437,7 +552,7 @@
     }
 
     function renderHtmlPreview() {
-        if (!studentLeftData || !studentRightData) return;
+        if (!studentLeftData) return;
 
         const renderGrid = (containerId, puzzleData) => {
             const container = document.getElementById(containerId);
@@ -450,7 +565,6 @@
                     cell.className = 'grid-cell';
                     cell.textContent = puzzleData.grid[r][c];
                     
-                    // Pokud je zapnutý klíč a políčko obsahuje schované slovo
                     if (showKey && puzzleData.solutionMap[r][c] !== -1) {
                         const colorIdx = puzzleData.solutionMap[r][c] % solutionColors.length;
                         cell.style.backgroundColor = solutionColors[colorIdx];
@@ -468,31 +582,40 @@
             const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
 
             if (sortedHints.length === 0) {
-                container.innerHTML = '<span style="color:red">Žádná slova se nevešla! Zvětšete síť.</span>';
+                container.innerHTML = '<span style="color:red">Žádná slova zadána nebo se nevešla!</span>';
                 return;
             }
 
             sortedHints.forEach(word => {
                 const div = document.createElement('div');
                 div.className = 'hint-item';
-                div.textContent = `▪️ ${word.cz}`;
+                div.textContent = `▪️ ${word.cz}`; // V HTML náhledu diakritiku klidně necháme správně
                 container.appendChild(div);
             });
         };
 
+        // Obě HTML mřížky krmíme stejnými daty z levé strany
         renderGrid('gridLeft', studentLeftData);
-        renderGrid('gridRight', studentRightData);
+        renderGrid('gridRight', studentLeftData);
         renderHints('hintsLeft', studentLeftData);
-        renderHints('hintsRight', studentRightData);
+        renderHints('hintsRight', studentLeftData);
     }
 
     async function generatePDF() {
-        if (!studentLeftData || !studentRightData) return;
+        if (!studentLeftData) return;
         const { jsPDF } = window.jspdf;
         
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         const halfWidth = 297 / 2;
-        const themeText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
+        
+        const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+        let themeText = "Vlastní výběr";
+        if (mode === 'db') {
+            themeText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
+        }
+        
+        // Odstranění diakritiky z názvu tématu pro PDF
+        const safeThemeText = removeDiacritics(themeText);
 
         function drawHalfPage(offsetX, puzzleData) {
             doc.setFont("Helvetica", "bold");
@@ -502,7 +625,7 @@
             
             doc.setFontSize(10);
             doc.setTextColor(71, 85, 105);
-            doc.text(`Thema: ${themeText}`, offsetX + 12, 22);
+            doc.text(`Thema: ${safeThemeText}`, offsetX + 12, 22);
 
             doc.setFont("Helvetica", "normal");
             doc.setFontSize(9);
@@ -542,7 +665,8 @@
             doc.setFont("Helvetica", "bold");
             doc.setFontSize(10);
             doc.setTextColor(15, 118, 110);
-            doc.text("Finde tyto výrazy (německy bez členu):", startX, hintsY);
+            // Odstraněna diakritika z instrukce
+            doc.text("Finde tyto vyrazy (nemecky bez clenu):", startX, hintsY);
 
             const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
             
@@ -558,24 +682,6 @@
                 const hY = hintsY + 5 + (r * 5);
                 
                 if (hY < 200) {
-                    doc.text(`[ ] ${word.cz}`, hX, hY);
-                }
-            });
-        }
-
-        drawHalfPage(0, studentLeftData);
-
-        doc.setLineWidth(0.3);
-        doc.setDrawColor(148, 163, 184);
-        doc.setLineDashPattern([2, 2], 0);
-        doc.line(halfWidth, 0, halfWidth, 210);
-        doc.setLineDashPattern([], 0); 
-
-        drawHalfPage(halfWidth, studentRightData);
-
-        const cleanThemeName = themeText.toLowerCase().replace(/[^a-z0-9]/g, "-");
-        doc.save(`wortsalat-2xA5-${cleanThemeName}.pdf`);
-    }
-</script>
-</body>
-</html>
+                    // Odstranění české diakritiky přímo před zápisem do PDF hintů
+                    const safeCzWord = removeDiacritics(word.cz);
+                    doc.text(
