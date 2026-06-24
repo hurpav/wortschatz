@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wortsalat Generator v1.4</title>
+    <title>Wortsalat Generator v1.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -249,6 +249,7 @@
             </label>
         </div>
 
+        <!-- Sekce A: Výběr z databáze -->
         <div id="sectionDb" class="grid-config">
             <div class="form-group">
                 <label for="themeSelect">Zvolit téma:</label>
@@ -271,11 +272,13 @@
             </div>
         </div>
 
+        <!-- Sekce B: Ruční zadání slovíček -->
         <div id="sectionManual" class="form-group hidden">
             <label for="customWordsInput">Zadejte slovíčka (jedno na řádek, formát: Německy - Česky):</label>
             <textarea id="customWordsInput" placeholder="der Hund - pes&#10;die Katze - kočka&#10;das Pferd - kůň" oninput="processWords()"></textarea>
         </div>
 
+        <!-- Společné nastavení velikosti sítě -->
         <div class="form-group" style="max-width: 300px;">
             <label for="gridSize">Velikost sítě (čtverec):</label>
             <select id="gridSize" onchange="processWords()">
@@ -343,7 +346,7 @@
 
     let allFetchedItems = []; 
     let activeWords = [];     
-    let studentLeftData = null; // Použijeme jako společná data pro obě strany
+    let studentLeftData = null; 
     let showKey = false;
 
     const solutionColors = [
@@ -351,7 +354,6 @@
         "#cffafe", "#e9d5ff", "#fca5a5", "#ccfbf1", "#e2e8f0"
     ];
 
-    // Pomocná funkce pro odstranění české diakritiky (pro PDF kompatibilitu)
     function removeDiacritics(str) {
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
@@ -384,7 +386,7 @@
         try {
             let response = await fetch(primaryUrl);
             if (!response.ok) response = await fetch(backupUrl);
-            if (!response.ok) throw new Error("JSON file not found / CORS lock.");
+            if (!response.ok) throw new Error("JSON file not found");
 
             const data = await response.json();
             let rawData = data[key] || data.words || data;
@@ -396,7 +398,7 @@
                 allFetchedItems = Array.isArray(rawData) ? rawData : [];
             }
         } catch (err) {
-            console.warn("Externí JSON nedostupný, načítám z lokální databáze.");
+            console.warn("Načítám z lokální databáze.");
             allFetchedItems = localDatabase[key] || [];
         }
 
@@ -467,9 +469,7 @@
             })
             .filter(w => w.searchName.length > 0 && w.searchName.length <= size);
 
-        // Vygenerujeme pouze JEDNU mřížku, kterou použijeme pro obě strany
         studentLeftData = generatePuzzle(activeWords, size);
-
         renderHtmlPreview();
     }
 
@@ -477,10 +477,7 @@
         let grid = Array(size).fill(null).map(() => Array(size).fill(''));
         let solutionMap = Array(size).fill(null).map(() => Array(size).fill(-1));
         
-        const directions = [
-            [0, 1], [1, 0], [1, 1], [1, -1]
-        ];
-
+        const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
         let placedWords = [];
         const sortedWords = [...words].sort((a, b) => b.searchName.length - a.searchName.length);
 
@@ -570,7 +567,6 @@
                         cell.style.backgroundColor = solutionColors[colorIdx];
                         cell.style.border = "1px solid #000";
                     }
-                    
                     container.appendChild(cell);
                 }
             }
@@ -582,23 +578,93 @@
             const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
 
             if (sortedHints.length === 0) {
-                container.innerHTML = '<span style="color:red">Žádná slova zadána nebo se nevešla!</span>';
+                container.innerHTML = '<span style="color:red">Žádná slova!</span>';
                 return;
             }
 
             sortedHints.forEach(word => {
                 const div = document.createElement('div');
                 div.className = 'hint-item';
-                div.textContent = `▪️ ${word.cz}`; // V HTML náhledu diakritiku klidně necháme správně
+                div.textContent = `▪️ ${word.cz}`;
                 container.appendChild(div);
             });
         };
 
-        // Obě HTML mřížky krmíme stejnými daty z levé strany
         renderGrid('gridLeft', studentLeftData);
         renderGrid('gridRight', studentLeftData);
         renderHints('hintsLeft', studentLeftData);
         renderHints('hintsRight', studentLeftData);
+    }
+
+    // Pomocná funkce pro vykreslení A5 poloviny (vytažená z vnitřku pro stabilitu)
+    function drawHalfPagePDF(doc, offsetX, puzzleData, themeText, halfWidth) {
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(15, 118, 110); 
+        doc.text("WORTSALAT", offsetX + 12, 16);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Thema: ${themeText}`, offsetX + 12, 22);
+
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text("Name: ______________________", offsetX + 12, 30);
+        doc.text("Klasse: _________", offsetX + halfWidth - 40, 30);
+
+        const size = puzzleData.size;
+        const startX = offsetX + 12;
+        const startY = 36;
+        const cellSize = Math.min(7.5, (halfWidth - 24) / size); 
+        
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(cellSize * 1.4); 
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(71, 85, 105);
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const x = startX + (c * cellSize);
+                const y = startY + (r * cellSize);
+                
+                doc.setFillColor(255, 255, 255);
+                doc.rect(x, y, cellSize, cellSize, 'F');
+                doc.rect(x, y, cellSize, cellSize, 'S');
+                
+                const char = puzzleData.grid[r][c];
+                const textWidth = doc.getTextWidth(char);
+                const textX = x + (cellSize - textWidth) / 2;
+                const textY = y + (cellSize + (cellSize * 0.3)) / 2; 
+                
+                doc.setTextColor(30, 41, 59);
+                doc.text(char, textX, textY);
+            }
+        }
+
+        const hintsY = startY + (size * cellSize) + 8;
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(15, 118, 110);
+        doc.text("Finde tyto vyrazy (nemecky bez clenu):", startX, hintsY);
+
+        const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
+        
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(30, 41, 59);
+        
+        const colWidth = (halfWidth - 24) / 3;
+        sortedHints.forEach((word, idx) => {
+            const c = idx % 3;
+            const r = Math.floor(idx / 3);
+            const hX = startX + (c * colWidth);
+            const hY = hintsY + 5 + (r * 5);
+            
+            if (hY < 200) {
+                const safeCzWord = removeDiacritics(word.cz);
+                doc.text(`[ ] ${safeCzWord}`, hX, hY);
+            }
+        });
     }
 
     async function generatePDF() {
@@ -609,88 +675,15 @@
         const halfWidth = 297 / 2;
         
         const mode = document.querySelector('input[name="sourceMode"]:checked').value;
-        let themeText = "Vlastní výběr";
+        let themeText = "Vlastni vyber";
         if (mode === 'db') {
             themeText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
         }
         
-        // Odstranění diakritiky z názvu tématu pro PDF
         const safeThemeText = removeDiacritics(themeText);
 
-        function drawHalfPage(offsetX, puzzleData) {
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(16);
-            doc.setTextColor(15, 118, 110); 
-            doc.text("WORTSALAT", offsetX + 12, 16);
-            
-            doc.setFontSize(10);
-            doc.setTextColor(71, 85, 105);
-            doc.text(`Thema: ${safeThemeText}`, offsetX + 12, 22);
-
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(9);
-            doc.text("Name: ______________________", offsetX + 12, 30);
-            doc.text("Klasse: _________", offsetX + halfWidth - 40, 30);
-
-            const size = puzzleData.size;
-            const startX = offsetX + 12;
-            const startY = 36;
-            const cellSize = Math.min(7.5, (halfWidth - 24) / size); 
-            
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(cellSize * 1.4); 
-            doc.setLineWidth(0.2);
-            doc.setDrawColor(71, 85, 105);
-
-            for (let r = 0; r < size; r++) {
-                for (let c = 0; c < size; c++) {
-                    const x = startX + (c * cellSize);
-                    const y = startY + (r * cellSize);
-                    
-                    doc.setFillColor(255, 255, 255);
-                    doc.rect(x, y, cellSize, cellSize, 'F');
-                    doc.rect(x, y, cellSize, cellSize, 'S');
-                    
-                    const char = puzzleData.grid[r][c];
-                    const textWidth = doc.getTextWidth(char);
-                    const textX = x + (cellSize - textWidth) / 2;
-                    const textY = y + (cellSize + (cellSize * 0.3)) / 2; 
-                    
-                    doc.setTextColor(30, 41, 59);
-                    doc.text(char, textX, textY);
-                }
-            }
-
-            const hintsY = startY + (size * cellSize) + 8;
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(10);
-            doc.setTextColor(15, 118, 110);
-            // Odstraněna diakritika z instrukce
-            doc.text("Finde tyto vyrazy (nemecky bez clenu):", startX, hintsY);
-
-            const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
-            
-            doc.setFont("Helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(30, 41, 59);
-            
-            const colWidth = (halfWidth - 24) / 3;
-            sortedHints.forEach((word, idx) => {
-                const c = idx % 3;
-                const r = Math.floor(idx / 3);
-                const hX = startX + (c * colWidth);
-                const hY = hintsY + 5 + (r * 5);
-                
-                if (hY < 200) {
-                    // Odstranění české diakritiky přímo před zápisem do PDF hintů
-                    const safeCzWord = removeDiacritics(word.cz);
-                    doc.text(`[ ] ${safeCzWord}`, hX, hY);
-                }
-            });
-        }
-
-        // Kreslíme 2x ten samý set (studentLeftData) na levou i pravou stranu listu
-        drawHalfPage(0, studentLeftData);
+        // Vykreslení obou identických stran
+        drawHalfPagePDF(doc, 0, studentLeftData, safeThemeText, halfWidth);
 
         doc.setLineWidth(0.3);
         doc.setDrawColor(148, 163, 184);
@@ -698,7 +691,7 @@
         doc.line(halfWidth, 0, halfWidth, 210);
         doc.setLineDashPattern([], 0); 
 
-        drawHalfPage(halfWidth, studentLeftData);
+        drawHalfPagePDF(doc, halfWidth, studentLeftData, safeThemeText, halfWidth);
 
         const labelFile = safeThemeText.toLowerCase().replace(/[^a-z0-9]/g, "-");
         doc.save(`wortsalat-2xA5-${labelFile}.pdf`);
