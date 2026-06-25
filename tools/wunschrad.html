@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wunschrad - Kolo štěstí v1.1</title>
+    <style>
+        :root {
+            --primary: #0f766e;
+            --primary-hover: #115e59;
+            --bg: #f0fdfa;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+            --accent: #d97706;
+            --danger: #ef4444;
+            --success: #16a34a;
+            --success-hover: #15803d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        /* Sekce s kolem */
+        .wheel-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 480px;
+        }
+
+        #wheelCanvas {
+            border: 4px solid var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            background: white;
+        }
+
+        .pointer {
+            position: absolute;
+            top: 20px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid var(--danger);
+            z-index: 10;
+        }
+
+        .spin-btn {
+            margin-top: 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        .spin-btn:hover { background: #b45309; }
+        .spin-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+        /* Dialog pro vítěze */
+        .winner-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .winner-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .winner-modal {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 100%;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .winner-overlay.active .winner-modal { transform: scale(1); }
+        .winner-modal h2 { color: var(--primary); margin-top: 0; font-size: 1.5rem; }
+        .winner-name { font-size: 2.5rem; font-weight: bold; margin: 20px 0; color: var(--accent); }
+
+        .close-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Tabulka žáků */
+        .table-container {
+            margin-top: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th { background: #f1f5f9; position: sticky; top: 0; z-index: 5; }
+
+        .note-input {
+            width: 100%;
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 0.85rem;
+        }
+
+        .note-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .btn-delete {
+            background: none; border: none; color: var(--danger);
+            cursor: pointer; font-size: 1.1rem; padding: 2px 5px;
+        }
+        .btn-delete:hover { transform: scale(1.2); }
+
+        .disabled-row { color: #94a3b8; background-color: #f8fafc; }
+        .disabled-row .strike-text { text-decoration: line-through; }
+
+        .btn-export {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .btn-export:hover { background: var(--success-hover); }
+        .btn-export:disabled { background: var(--border); cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🎡 Wunschrad - Kolo štěstí s klasifikací</h1>
+        <p>Zapisujte známky a poznámky přímo v tabulce. Data můžete na konci hodiny exportovat zpět do JSON souboru.</p>
+    </header>
+
+    <div class="main-layout">
+        <div>
+            <div class="card wheel-container">
+                <div class="pointer"></div>
+                <canvas id="wheelCanvas" width="400" height="400"></canvas>
+                <button class="spin-btn" id="spinBtn" onclick="spinWheel()" disabled>ROZTOČIT KOLO!</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label for="classSelect">Vybrat třídu:</label>
+                <select id="classSelect" onchange="loadClass()">
+                    <option value="" disabled selected>-- Vyberte třídu --</option>
+                    <option value="7A">7. A</option>
+                    <option value="7B">7. B</option>
+                    <option value="7C">7. C</option>
+                    <option value="8A">8. A</option>
+                    <option value="8B">8. B</option>
+                    <option value="8C">8. C</option>
+                    <option value="9A">9. A</option>
+                    <option value="9B">9. B</option>
+                    <option value="9C">9. C</option>
+                </select>
+            </div>
+
+            <h3>Seznam žáků (<span id="activeCount">0</span> aktivních v kole)</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">V kole</th>
+                            <th>Jméno</th>
+                            <th>Známky / Poznámky (Zkoušeno)</th>
+                            <th style="width: 60px; text-align: center;">Chybí</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #94a3b8; padding: 30px;">Vyberte třídu pro načtení dat.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button class="btn-export" id="exportBtn" onclick="exportUpdatedJson()" disabled>
+                📥 Uložit a Exportovat aktualizovaný JSON třídy
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="winner-overlay" id="winnerOverlay">
+    <div class="winner-modal">
+        <h2>Vybráno! 🎯</h2>
+        <div class="winner-name" id="winnerName">...</div>
+        <button class="close-btn" onclick="closeWinnerModal()">Skvělé, zavřít</button>
+    </div>
+</div>
+
+<script>
+    let currentClassCode = "";
+    let students = []; 
+    let currentRotation = 0;
+    let isSpinning = false;
+    
+    const colors = ["#0f766e", "#14b8a6", "#0d9488", "#2dd4bf", "#115e59", "#042f2e"];
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTickSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    // Hlavní funkce pro načtení třídy
+    async function loadClass() {
+        currentClassCode = document.getElementById('classSelect').value;
+        if (!currentClassCode) return;
+
+        // 1. Zkusíme načíst data z localStorage (pokud už učitel dnes něco zapisoval)
+        const localData = localStorage.getItem(`wunschrad_class_${currentClassCode}`);
+        
+        if (localData) {
+            students = JSON.parse(localData);
+            // Reset stavu vytočení při novém načtení hodiny (aby byli všichni v kole)
+            students.forEach(s => s.alreadyPicked = false);
+            updateUI();
+        } else {
+            // 2. Pokud v lokální paměti nic není, stáhneme čerstvý JSON ze složky
+            try {
+                const response = await fetch(`../data/klassen/${currentClassCode}.json`);
+                if (!response.ok) throw new Error("Soubor třídy nebyl nalezen.");
+                const data = await response.json();
+                
+                students = data.map((s, idx) => ({
+                    id: idx,
+                    name: s.name,
+                    tested: s.tested || "", // Načte dřívější poznámky/známky z JSONu
+                    isAbsent: false,      
+                    alreadyPicked: false  
+                }));
+                saveToLocalStorage();
+                updateUI();
+            } catch (err) {
+                console.warn(err.message + " Používám prázdnou šablonu.");
+                students = [
+                    {id: 1, name: "Ukázka: Jan Novák", tested: "", isAbsent: false, alreadyPicked: false},
+                    {id: 2, name: "Ukázka: Marie Černá", tested: "15.6. 1", isAbsent: false, alreadyPicked: false}
+                ];
+                saveToLocalStorage();
+                updateUI();
+            }
+        }
+    }
+
+    function saveToLocalStorage() {
+        if (currentClassCode) {
+            localStorage.setItem(`wunschrad_class_${currentClassCode}`, JSON.stringify(students));
+        }
+    }
+
+    function getActiveStudents() {
+        return students.filter(s => !s.isAbsent && !s.alreadyPicked);
+    }
+
+    function updateUI() {
+        renderTable();
+        drawWheel();
+        
+        const activeCount = getActiveStudents().length;
+        document.getElementById('activeCount').textContent = activeCount;
+        document.getElementById('spinBtn').disabled = activeCount === 0;
+        document.getElementById('exportBtn').disabled = students.length === 0;
+    }
+
+    // Aktualizace textu poznámky při psaní
+    function updateStudentNote(id, text) {
+        const student = students.find(s => s.id === id);
+        if (student) {
+            student.tested = text;
+            saveToLocalStorage(); // Okamžité uložení do paměti prohlížeče
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('studentsTableBody');
+        tbody.innerHTML = '';
+        if (students.length === 0) return;
+
+        // Seřadíme žáky abecedně podle jména
+        const sorted = [...students].sort((a,b) => a.name.localeCompare(b.name));
+
+        sorted.forEach(student => {
+            const tr = document.createElement('tr');
+            const isActive = !student.isAbsent && !student.alreadyPicked;
+            
+            if (!isActive) tr.className = 'disabled-row';
+
+            // 1. Sloupec: Aktivní v kole (Checkbox)
+            const tdCheck = document.createElement('td');
+            tdCheck.style.textAlign = 'center';
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.checked = student.alreadyPicked;
+            chk.disabled = student.isAbsent;
+            chk.onchange = () => {
+                student.alreadyPicked = chk.checked;
+                updateUI();
+            };
+            tdCheck.appendChild(chk);
+
+            // 2. Sloupec: Jméno žáka
+            const tdName = document.createElement('td');
+            const spanName = document.createElement('span');
+            spanName.className = 'strike-text';
+            spanName.textContent = student.name;
+            tdName.appendChild(spanName);
+
+            // 3. Sloupec: Input pro rychlé psaní známek / poznámek
+            const tdNote = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'note-input';
+            input.value = student.tested;
+            input.placeholder = "např: 24.6. známka 1 / aktivní...";
+            input.oninput = (e) => updateStudentNote(student.id, e.target.value);
+            tdNote.appendChild(input);
+
+            // 4. Sloupec: Tlačítko Chybí (odstranit z kola)
+            const tdAction = document.createElement('td');
+            tdAction.style.textAlign = 'center';
+            const btnDel = document.createElement('button');
+            btnDel.className = 'btn-delete';
+            btnDel.innerHTML = student.isAbsent ? '➕' : '❌';
+            btnDel.title = student.isAbsent ? 'Vrátit do třídy' : 'Žák chybí';
+            btnDel.onclick = () => {
+                student.isAbsent = !student.isAbsent;
+                if (student.isAbsent) student.alreadyPicked = false;
+                saveToLocalStorage();
+                updateUI();
+            };
+            tdAction.appendChild(btnDel);
+
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdName);
+            tr.appendChild(tdNote);
+            tr.appendChild(tdAction);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function drawWheel() {
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const activeList = getActiveStudents();
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 - 10;
+
+        if (activeList.length === 0) {
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "bold 16px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Žádní aktivní žáci v kole", centerX, centerY);
+            return;
+        }
+
+        const arcSize = (2 * Math.PI) / activeList.length;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(currentRotation);
+
+        activeList.forEach((student, i) => {
+            const angle = i * arcSize;
+            
+            ctx.beginPath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius, angle, angle + arcSize);
+            ctx.lineTo(0, 0);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.save();
+            ctx.fillStyle = "white";
+            ctx.font = "bold 13px sans-serif";
+            ctx.textAlign = "right";
+            ctx.rotate(angle + arcSize / 2);
+            ctx.fillText(student.name, radius - 20, 5);
+            ctx.restore();
+        });
+
+        ctx.beginPath();
+        ctx.fillStyle = "white";
+        ctx.arc(0, 0, 25, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function spinWheel() {
+        if (isSpinning) return;
+        const activeList = getActiveStudents();
+        if (activeList.length === 0) return;
+
+        isSpinning = true;
+        document.getElementById('spinBtn').disabled = true;
+
+        const spinAngle = Math.random() * 5 + 6; 
+        let duration = 4000; 
+        let start = null;
+
+        const arcSize = (2 * Math.PI) / activeList.length;
+        let lastSegmentIdx = -1;
+
+        function animate(timestamp) {
+            if (!start) start = timestamp;
+            let progress = timestamp - start;
+            if (progress > duration) progress = duration;
+
+            let t = progress / duration;
+            let ease = 1 - Math.pow(1 - t, 3);
+            
+            let angleNow = ease * spinAngle * (2 * Math.PI);
+            currentRotation = angleNow % (2 * Math.PI);
+
+            let pointerAngle = (-Math.PI / 2) - currentRotation;
+            if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+            while (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+            pointerAngle = pointerAngle % (2 * Math.PI);
+
+            let currentSegmentIdx = Math.floor(pointerAngle / arcSize) % activeList.length;
+            
+            if (currentSegmentIdx !== lastSegmentIdx) {
+                playTickSound();
+                lastSegmentIdx = currentSegmentIdx;
+            }
+
+            drawWheel();
+
+            if (progress < duration) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                const winner = activeList[currentSegmentIdx];
+                showWinner(winner);
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    function showWinner(student) {
+        document.getElementById('winnerName').textContent = student.name;
+        document.getElementById('winnerOverlay').classList.add('active');
+        student.alreadyPicked = true; 
+    }
+
+    function closeWinnerModal() {
+        document.getElementById('winnerOverlay').classList.remove('active');
+        updateUI();
+    }
+
+    // Vygenerování čistého JSONu k uložení na server/disk
+    function exportUpdatedJson() {
+        if (!currentClassCode || students.length === 0) return;
+
+        // Převedeme data zpět do původního formátu, který vyžaduješ
+        const exportData = students.map(s => ({
+            name: s.name,
+            tested: s.tested
+        }));
+
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        // Vytvoříme skrytý odkaz ke stažení souboru
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentClassCode}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Úklid
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
