@@ -119,9 +119,11 @@
         .btn-spin:hover { background-color: #059669; }
         .btn-danger { background-color: #ef4444; }
         .btn-danger:hover { background-color: #dc2626; }
+        .btn-archive { background-color: #6b7280; margin-top: 10px; }
+        .btn-archive:hover { background-color: #4b5563; }
 
         .student-list {
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 6px;
@@ -179,7 +181,6 @@
     <h1>Wunschrad 🎯</h1>
     
     <div class="container">
-        <!-- LEVÝ PANEL: Správa tříd ze serveru -->
         <div class="panel">
             <div id="status-indicator" class="status-badge status-saving">Načítání dat ze serveru...</div>
             
@@ -194,14 +195,18 @@
             <h3>Seznam žáků</h3>
             <div class="student-list" id="students-container"></div>
 
-            <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 5px; margin-bottom: 15px;">
                 <input type="text" id="new-student-vn" placeholder="Vorname">
                 <input type="text" id="new-student-fn" placeholder="Familienname">
                 <button id="btn-add-student" style="width: auto;">Přidat</button>
             </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+
+            <h3>Lokální záloha</h3>
+            <button id="btn-export" class="btn-archive">📥 Stáhnout záložní JSON do PC</button>
         </div>
 
-        <!-- PRAVÝ PANEL: Kolo štěstí -->
         <div class="panel wheel-area">
             <div id="fullscreen-container">
                 <div class="wheel-wrapper">
@@ -213,7 +218,6 @@
         </div>
     </div>
 
-    <!-- MODAL PRO ZÁPIS ZNÁMKY -->
     <div class="modal" id="grade-modal">
         <div class="modal-content">
             <h2 id="modal-student-name">Vybraný žák</h2>
@@ -229,7 +233,6 @@
     </div>
 
     <script>
-        // Cesta k JSON souboru definovaná napevno
         const DATA_URL = '/wortschatz/data/klassen_data.json';
         
         let database = {};
@@ -254,34 +257,39 @@
                 if (!response.ok) throw new Error('Nepodařilo se načíst soubor.');
                 database = await response.json();
                 updateClassSelect();
-                showStatus('Data synchronizována', 'sync');
+                showStatus('Data synchronizována se serverem', 'sync');
             } catch (err) {
-                showStatus('Chyba při stahování dat ze serveru', 'saving');
+                // Pokud server selže, zkusí načíst poslední stav z localStorage
+                if (localStorage.getItem('kolo_stesti_local')) {
+                    database = JSON.parse(localStorage.getItem('kolo_stesti_local'));
+                    updateClassSelect();
+                    showStatus('Načtena lokální data (Server nedostupný)', 'saving');
+                } else {
+                    showStatus('Chyba při stahování dat ze serveru', 'saving');
+                }
                 console.error(err);
             }
         }
 
-        async function saveDataToServer() {
+        async function saveData() {
+            // Každou změnu vždy uložíme i lokálně do prohlížeče jako pojistku
+            localStorage.setItem('kolo_stesti_local', JSON.stringify(database));
+
             try {
                 showStatus('Ukládání na server...', 'saving');
                 const response = await fetch(DATA_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(database, null, 4)
                 });
                 
                 if(response.ok) {
-                    showStatus('Data synchronizována', 'sync');
+                    showStatus('Data synchronizována se serverem', 'sync');
                 } else {
-                    // Záložní řešení: Pokud server neumí přímý POST do JSONu, uloží se aspoň do LocalStorage
-                    localStorage.setItem('kolo_stesti_backup', JSON.stringify(database));
-                    showStatus('Uloženo lokálně (Server neodpověděl)', 'saving');
+                    showStatus('Uloženo pouze lokálně v prohlížeči', 'saving');
                 }
             } catch (err) {
-                localStorage.setItem('kolo_stesti_backup', JSON.stringify(database));
-                showStatus('Chyba serveru - uloženo v prohlížeči', 'saving');
+                showStatus('Chyba serveru – uloženo lokálně', 'saving');
                 console.error(err);
             }
         }
@@ -357,9 +365,8 @@
 
         window.removeStudent = function(index) {
             database[currentClass].splice(index, 1);
-            // Přepočítání ID pro zbylé žáky, aby zůstala sekvence
             database[currentClass].forEach((s, idx) => s.id = idx);
-            saveDataToServer();
+            saveData();
             renderStudents();
         }
 
@@ -405,7 +412,7 @@
             });
         }
 
-        // --- OTÁČENÍ (FULLSCREEN + ZVUK) ---
+        // --- OTÁČENÍ (FULLSCREEN) ---
         function spinWheel() {
             const students = database[currentClass] || [];
             if (students.length === 0 || isSpinning) return;
@@ -479,7 +486,7 @@
                     "datum": date
                 });
                 
-                saveDataToServer();
+                saveData();
                 renderStudents();
             }
             gradeModal.style.display = "none";
@@ -511,7 +518,7 @@
                 });
                 vnInput.value = "";
                 fnInput.value = "";
-                saveDataToServer();
+                saveData();
                 renderStudents();
             }
         });
@@ -521,7 +528,18 @@
             spinWheel();
         });
 
-        // Spuštění aplikace: Načtení dat přímo ze zadané složky
+        // Tlačítko pro manuální export a stažení souboru do PC
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(database, null, 4));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "klassen_data.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+
+        // Prvotní spuštění
         loadDataFromServer();
     </script>
 </body>
