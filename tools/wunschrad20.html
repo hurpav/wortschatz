@@ -122,8 +122,16 @@
         .btn-archive { background-color: #6b7280; margin-top: 10px; }
         .btn-archive:hover { background-color: #4b5563; }
 
+        .filter-box {
+            background-color: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+            margin-top: 10px;
+        }
+
         .student-list {
-            max-height: 250px;
+            max-height: 200px;
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 6px;
@@ -137,6 +145,11 @@
             align-items: center;
             padding: 6px 10px;
             border-bottom: 1px solid #f1f5f9;
+        }
+
+        .student-item.excluded {
+            color: #94a3b8;
+            background-color: #f8fafc;
         }
 
         .student-item button {
@@ -190,7 +203,47 @@
                 <option value="">-- Načítám třídy --</option>
             </select>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+            <div class="filter-box">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top:0;">
+                    <input type="checkbox" id="filter-enable" style="width:auto; margin:0;"> 
+                    <strong>Aktivovat filtr zkoušení</strong>
+                </label>
+                
+                <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    <div style="flex:1;">
+                        <span style="font-size:12px;">Zkoušen od (měsíc):</span>
+                        <select id="filter-month-from" style="margin-bottom:0; padding:5px;">
+                            <option value="09">09 (Září)</option>
+                            <option value="10">10 (Říjen)</option>
+                            <option value="11">11 (Listopad)</option>
+                            <option value="12">12 (Prosinec)</option>
+                            <option value="01">01 (Leden)</option>
+                            <option value="02">02 (Únor)</option>
+                            <option value="03">03 (Březen)</option>
+                            <option value="04">04 (Duben)</option>
+                            <option value="05">05 (Květen)</option>
+                            <option value="06">06 (Červen)</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <span style="font-size:12px;">Do (měsíc):</span>
+                        <select id="filter-month-to" style="margin-bottom:0; padding:5px;">
+                            <option value="09">09 (Září)</option>
+                            <option value="10">10 (Říjen)</option>
+                            <option value="11" selected>11 (Listopad)</option>
+                            <option value="12">12 (Prosinec)</option>
+                            <option value="01">01 (Leden)</option>
+                            <option value="02">02 (Únor)</option>
+                            <option value="03">03 (Březen)</option>
+                            <option value="04">04 (Duben)</option>
+                            <option value="05">05 (Květen)</option>
+                            <option value="06">06 (Červen)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border);">
 
             <h3>Seznam žáků</h3>
             <div class="student-list" id="students-container"></div>
@@ -201,7 +254,7 @@
                 <button id="btn-add-student" style="width: auto;">Přidat</button>
             </div>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--border);">
 
             <h3>Lokální záloha</h3>
             <button id="btn-export" class="btn-archive">📥 Stáhnout záložní JSON do PC</button>
@@ -238,7 +291,8 @@
         let database = {};
         let currentClass = "";
         let isSpinning = false;
-        let selectedStudentIndex = null;
+        let selectedStudentIndex = null; // index v AKTIVNÍM (vyfiltrovaném) seznamu
+        let activeStudentsList = [];     // pomocné pole pro aktuálně zobrazené žáky na kole
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const canvas = document.getElementById('wheel');
@@ -249,7 +303,37 @@
         const gradeModal = document.getElementById('grade-modal');
         const statusIndicator = document.getElementById('status-indicator');
 
-        // --- NAČTENÍ A UKLÁDÁNÍ PŘES API ---
+        // Prvky filtru
+        const filterEnable = document.getElementById('filter-enable');
+        const filterMonthFrom = document.getElementById('filter-month-from');
+        const filterMonthTo = document.getElementById('filter-month-to');
+
+        // --- POMOCNÁ FUNKCE PRO OVĚŘENÍ ZKOUŠENÍ V TERMÍNU ---
+        function isStudentExcluded(student) {
+            if (!filterEnable.checked) return false;
+            if (!student.historie || student.historie.length === 0) return false;
+
+            const fromVal = parseInt(filterMonthFrom.value);
+            const toVal = parseInt(filterMonthTo.value);
+
+            return student.historie.some(h => {
+                if (!h.datum) return false;
+                // Formát data je YYYY-MM-DD, vytáhneme MM (měsíc)
+                const parts = h.datum.split('-');
+                if (parts.length < 2) return false;
+                const mVal = parseInt(parts[1]);
+
+                // Ošetření školního roku (přechod přes prosinec/leden)
+                if (fromVal <= toVal) {
+                    return mVal >= fromVal && mVal <= toVal;
+                } else {
+                    // Pokud by se filtrovalo např. od listopadu (11) do února (02)
+                    return mVal >= fromVal || mVal <= toVal;
+                }
+            });
+        }
+
+        // --- NAČTENÍ A UKLÁDÁNÍ ---
         async function loadDataFromServer() {
             try {
                 showStatus('Načítání dat...', 'saving');
@@ -259,7 +343,6 @@
                 updateClassSelect();
                 showStatus('Data synchronizována se serverem', 'sync');
             } catch (err) {
-                // Pokud server selže, zkusí načíst poslední stav z localStorage
                 if (localStorage.getItem('kolo_stesti_local')) {
                     database = JSON.parse(localStorage.getItem('kolo_stesti_local'));
                     updateClassSelect();
@@ -272,9 +355,7 @@
         }
 
         async function saveData() {
-            // Každou změnu vždy uložíme i lokálně do prohlížeče jako pojistku
             localStorage.setItem('kolo_stesti_local', JSON.stringify(database));
-
             try {
                 showStatus('Ukládání na server...', 'saving');
                 const response = await fetch(DATA_URL, {
@@ -282,7 +363,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(database, null, 4)
                 });
-                
                 if(response.ok) {
                     showStatus('Data synchronizována se serverem', 'sync');
                 } else {
@@ -328,7 +408,6 @@
             });
         }
 
-        // --- LOGIKA ROZHRANÍ ---
         function updateClassSelect() {
             classSelect.innerHTML = '<option value="">-- Vyberte třídu --</option>';
             Object.keys(database).forEach(className => {
@@ -340,18 +419,35 @@
             classSelect.disabled = false;
         }
 
+        // --- VYGENEROVÁNÍ ROZHRANÍ A SEZNAMŮ ---
         function renderStudents() {
             studentsContainer.innerHTML = "";
-            if (!currentClass || !database[currentClass]) return;
+            activeStudentsList = [];
+            if (!currentClass || !database[currentClass]) {
+                drawWheel();
+                return;
+            }
 
             database[currentClass].forEach((student, index) => {
+                const excluded = isStudentExcluded(student);
+                
+                // Pokud žák není vyloučen, přidáme ho do osudí kola štěstí
+                if (!excluded) {
+                    activeStudentsList.push({
+                        studentRef: student,
+                        originalIndex: index
+                    });
+                }
+
                 let div = document.createElement('div');
-                div.className = 'student-item';
+                div.className = `student-item ${excluded ? 'excluded' : ''}`;
                 
                 let infoText = `${student.vorname} ${student.familienname}`;
-                if(student.historie && student.historie.length > 0) {
+                if (excluded) {
+                    infoText += ` <strong>[Mimo kolo]</strong>`;
+                } else if (student.historie && student.historie.length > 0) {
                     let posledni = student.historie[student.historie.length - 1];
-                    infoText += ` (Zkoušen dne: ${posledni.datum} -> ${posledni.známka})`;
+                    infoText += ` (${posledni.datum} -> ${posledni.známka})`;
                 }
 
                 div.innerHTML = `
@@ -360,6 +456,7 @@
                 `;
                 studentsContainer.appendChild(div);
             });
+
             drawWheel();
         }
 
@@ -370,10 +467,9 @@
             renderStudents();
         }
 
-        // --- KRESLENÍ KOLA ---
+        // --- KRESLENÍ KOLA ŠTĚSTÍ ---
         function drawWheel() {
-            const students = database[currentClass] || [];
-            const numSegments = students.length;
+            const numSegments = activeStudentsList.length;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (numSegments === 0) {
@@ -384,14 +480,14 @@
                 ctx.fillStyle = "#1e293b";
                 ctx.font = "16px sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText("Žádní žáci ve třídě", 225, 225);
+                ctx.fillText(currentClass ? "Všichni žáci odfiltrováni / bez žáků" : "Vyberte třídu", 225, 225);
                 return;
             }
 
             const arcSize = (2 * Math.PI) / numSegments;
             const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#6366f1"];
 
-            students.forEach((student, i) => {
+            activeStudentsList.forEach((item, i) => {
                 const angle = i * arcSize;
                 ctx.fillStyle = colors[i % colors.length];
                 ctx.beginPath();
@@ -407,15 +503,15 @@
                 ctx.textAlign = "right";
                 ctx.fillStyle = "white";
                 ctx.font = "bold 14px sans-serif";
-                ctx.fillText(`${student.vorname} ${student.familienname.substring(0,1)}.`, 200, 5);
+                ctx.fillText(`${item.studentRef.vorname} ${item.studentRef.familienname.substring(0,1)}.`, 200, 5);
                 ctx.restore();
             });
         }
 
-        // --- OTÁČENÍ (FULLSCREEN) ---
+        // --- TOČENÍ ---
         function spinWheel() {
-            const students = database[currentClass] || [];
-            if (students.length === 0 || isSpinning) return;
+            const numSegments = activeStudentsList.length;
+            if (numSegments === 0 || isSpinning) return;
 
             isSpinning = true;
             
@@ -423,7 +519,6 @@
                 fullscreenContainer.requestFullscreen().catch(err => console.log(err));
             }
 
-            const numSegments = students.length;
             const randDegrees = Math.floor(Math.random() * 360) + 2880; 
             canvas.style.transform = `rotate(${randDegrees}deg)`;
 
@@ -452,7 +547,7 @@
                 }
 
                 setTimeout(() => {
-                    openGradeModal(students[selectedStudentIndex]);
+                    openGradeModal(activeStudentsList[selectedStudentIndex].studentRef);
                 }, 500);
 
                 canvas.style.transition = 'none';
@@ -477,11 +572,11 @@
             const date = document.getElementById('date-input').value;
 
             if (grade && selectedStudentIndex !== null) {
-                if(!database[currentClass][selectedStudentIndex].historie) {
-                    database[currentClass][selectedStudentIndex].historie = [];
-                }
+                // Správný zápis přímo do objektu studenta skrze referenci
+                const targetStudent = activeStudentsList[selectedStudentIndex].studentRef;
+                if(!targetStudent.historie) targetStudent.historie = [];
                 
-                database[currentClass][selectedStudentIndex].historie.push({
+                targetStudent.historie.push({
                     "známka": grade,
                     "datum": date
                 });
@@ -528,7 +623,6 @@
             spinWheel();
         });
 
-        // Tlačítko pro manuální export a stažení souboru do PC
         document.getElementById('btn-export').addEventListener('click', () => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(database, null, 4));
             const downloadAnchor = document.createElement('a');
@@ -538,6 +632,11 @@
             downloadAnchor.click();
             downloadAnchor.remove();
         });
+
+        // Event listenery pro změnu filtrů (okamžitě překreslí rozhraní)
+        filterEnable.addEventListener('change', renderStudents);
+        filterMonthFrom.addEventListener('change', renderStudents);
+        filterMonthTo.addEventListener('change', renderStudents);
 
         // Prvotní spuštění
         loadDataFromServer();
