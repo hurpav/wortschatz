@@ -1,528 +1,1213 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wunschrad - Kolo štěstí</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #1e40af;
-            --background: #f8fafc;
-            --surface: #ffffff;
-            --text: #1e293b;
-            --border: #cbd5e1;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 { margin-bottom: 10px; }
-
-        .container {
-            display: flex;
-            gap: 40px;
-            max-width: 1200px;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .panel {
-            background: var(--surface);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            flex: 1;
-        }
-
-        .wheel-area {
-            flex: 1.5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        #fullscreen-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: var(--background);
-            padding: 20px;
-            border-radius: 12px;
-        }
-
-        #fullscreen-container:fullscreen {
-            width: 100vw;
-            height: 100vh;
-            background: #111827;
-            color: white;
-        }
-
-        .wheel-wrapper {
-            position: relative;
-            width: 450px;
-            height: 450px;
-        }
-
-        .pointer {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-top: 30px solid #ef4444;
-            z-index: 10;
-        }
-
-        canvas {
-            border-radius: 50%;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-            transition: transform 4s cubic-bezier(0.1, 0.8, 0.25, 1);
-        }
-
-        label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; }
-        select, input, button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-
-        button:hover { background-color: var(--secondary); }
-        .btn-spin { background-color: #10b981; font-size: 18px; padding: 15px; margin-top: 15px;}
-        .btn-spin:hover { background-color: #059669; }
-        .btn-danger { background-color: #ef4444; }
-        .btn-danger:hover { background-color: #dc2626; }
-
-        .student-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 5px;
-            margin-bottom: 15px;
-        }
-
-        .student-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 10px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .student-item button {
-            width: auto;
-            padding: 2px 8px;
-            margin: 0;
-        }
-
-        .status-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .status-sync { background-color: #d1fae5; color: #065f46; }
-        .status-saving { background-color: #fef3c7; color: #92400e; }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            max-width: 400px;
-            width: 100%;
-            color: var(--text);
-        }
-    </style>
-</head>
-<body>
-
-    <h1>Wunschrad 🎯</h1>
-    
-    <div class="container">
-        <!-- LEVÝ PANEL: Správa tříd ze serveru -->
-        <div class="panel">
-            <div id="status-indicator" class="status-badge status-saving">Načítání dat ze serveru...</div>
-            
-            <h3>Výběr třídy</h3>
-            <label for="class-select">Třída:</label>
-            <select id="class-select" disabled>
-                <option value="">-- Načítám třídy --</option>
-            </select>
-
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
-
-            <h3>Seznam žáků</h3>
-            <div class="student-list" id="students-container"></div>
-
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="new-student-vn" placeholder="Vorname">
-                <input type="text" id="new-student-fn" placeholder="Familienname">
-                <button id="btn-add-student" style="width: auto;">Přidat</button>
-            </div>
-        </div>
-
-        <!-- PRAVÝ PANEL: Kolo štěstí -->
-        <div class="panel wheel-area">
-            <div id="fullscreen-container">
-                <div class="wheel-wrapper">
-                    <div class="pointer"></div>
-                    <canvas id="wheel" width="450" height="450"></canvas>
-                </div>
-                <button id="btn-spin" class="btn-spin">ROZTOČIT KOLO 🚀</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL PRO ZÁPIS ZNÁMKY -->
-    <div class="modal" id="grade-modal">
-        <div class="modal-content">
-            <h2 id="modal-student-name">Vybraný žák</h2>
-            <label for="grade-input">Známka:</label>
-            <input type="text" id="grade-input" placeholder="Např. 1, 2-, N...">
-
-            <label for="date-input">Datum zkoušení:</label>
-            <input type="date" id="date-input">
-
-            <button id="btn-save-grade" class="btn-spin" style="margin-top: 10px;">Uložit hodnocení</button>
-            <button id="btn-close-modal" class="btn-danger" style="margin-top: 5px;">Zavřít bez uložení</button>
-        </div>
-    </div>
-
-    <script>
-        // Cesta k JSON souboru definovaná napevno
-        const DATA_URL = '/wortschatz/data/klassen_data.json';
-        
-        let database = {};
-        let currentClass = "";
-        let isSpinning = false;
-        let selectedStudentIndex = null;
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const canvas = document.getElementById('wheel');
-        const ctx = canvas.getContext('2d');
-        const classSelect = document.getElementById('class-select');
-        const studentsContainer = document.getElementById('students-container');
-        const fullscreenContainer = document.getElementById('fullscreen-container');
-        const gradeModal = document.getElementById('grade-modal');
-        const statusIndicator = document.getElementById('status-indicator');
-
-        // --- NAČTENÍ A UKLÁDÁNÍ PŘES API ---
-        async function loadDataFromServer() {
-            try {
-                showStatus('Načítání dat...', 'saving');
-                const response = await fetch(DATA_URL);
-                if (!response.ok) throw new Error('Nepodařilo se načíst soubor.');
-                database = await response.json();
-                updateClassSelect();
-                showStatus('Data synchronizována', 'sync');
-            } catch (err) {
-                showStatus('Chyba při stahování dat ze serveru', 'saving');
-                console.error(err);
-            }
-        }
-
-        async function saveDataToServer() {
-            try {
-                showStatus('Ukládání na server...', 'saving');
-                const response = await fetch(DATA_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(database, null, 4)
-                });
-                
-                if(response.ok) {
-                    showStatus('Data synchronizována', 'sync');
-                } else {
-                    // Záložní řešení: Pokud server neumí přímý POST do JSONu, uloží se aspoň do LocalStorage
-                    localStorage.setItem('kolo_stesti_backup', JSON.stringify(database));
-                    showStatus('Uloženo lokálně (Server neodpověděl)', 'saving');
+{
+    "7.A": [
+        {
+            "id": 0,
+            "jmeno": "Lukas Svoboda",
+            "vorname": "Lukas",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Jonas Müller",
+            "vorname": "Jonas",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Sophia Fischer",
+            "vorname": "Sophia",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Tomáš Weber",
+            "vorname": "Tomáš",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-03"
                 }
-            } catch (err) {
-                localStorage.setItem('kolo_stesti_backup', JSON.stringify(database));
-                showStatus('Chyba serveru - uloženo v prohlížeči', 'saving');
-                console.error(err);
-            }
-        }
-
-        function showStatus(text, type) {
-            statusIndicator.textContent = text;
-            statusIndicator.className = `status-badge status-${type}`;
-        }
-
-        // --- ZVUKY ---
-        function playTickSound() {
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(550, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.05);
-        }
-
-        function playWinSound() {
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            notes.forEach((freq, i) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i*0.12);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime + i*0.12);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i*0.12 + 0.25);
-                osc.start(audioCtx.currentTime + i*0.12);
-                osc.stop(audioCtx.currentTime + i*0.12 + 0.25);
-            });
-        }
-
-        // --- LOGIKA ROZHRANÍ ---
-        function updateClassSelect() {
-            classSelect.innerHTML = '<option value="">-- Vyberte třídu --</option>';
-            Object.keys(database).forEach(className => {
-                let opt = document.createElement('option');
-                opt.value = className;
-                opt.textContent = className;
-                classSelect.appendChild(opt);
-            });
-            classSelect.disabled = false;
-        }
-
-        function renderStudents() {
-            studentsContainer.innerHTML = "";
-            if (!currentClass || !database[currentClass]) return;
-
-            database[currentClass].forEach((student, index) => {
-                let div = document.createElement('div');
-                div.className = 'student-item';
-                
-                let infoText = `${student.vorname} ${student.familienname}`;
-                if(student.historie && student.historie.length > 0) {
-                    let posledni = student.historie[student.historie.length - 1];
-                    infoText += ` (Zkoušen dne: ${posledni.datum} -> ${posledni.známka})`;
+            ]
+        },
+        {
+            "id": 4,
+            "jmeno": "Tomáš Fischer",
+            "vorname": "Tomáš",
+            "familienname": "Fischer",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-08"
                 }
-
-                div.innerHTML = `
-                    <span><strong>[ID ${student.id}]</strong> ${infoText}</span>
-                    <button class="btn-danger" onclick="removeStudent(${index})">❌</button>
-                `;
-                studentsContainer.appendChild(div);
-            });
-            drawWheel();
-        }
-
-        window.removeStudent = function(index) {
-            database[currentClass].splice(index, 1);
-            // Přepočítání ID pro zbylé žáky, aby zůstala sekvence
-            database[currentClass].forEach((s, idx) => s.id = idx);
-            saveDataToServer();
-            renderStudents();
-        }
-
-        // --- KRESLENÍ KOLA ---
-        function drawWheel() {
-            const students = database[currentClass] || [];
-            const numSegments = students.length;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (numSegments === 0) {
-                ctx.fillStyle = "#cbd5e1";
-                ctx.beginPath();
-                ctx.arc(225, 225, 200, 0, 2 * Math.PI);
-                ctx.fill();
-                ctx.fillStyle = "#1e293b";
-                ctx.font = "16px sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText("Žádní žáci ve třídě", 225, 225);
-                return;
-            }
-
-            const arcSize = (2 * Math.PI) / numSegments;
-            const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#6366f1"];
-
-            students.forEach((student, i) => {
-                const angle = i * arcSize;
-                ctx.fillStyle = colors[i % colors.length];
-                ctx.beginPath();
-                ctx.moveTo(225, 225);
-                ctx.arc(225, 225, 220, angle, angle + arcSize);
-                ctx.lineTo(225, 225);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.save();
-                ctx.translate(225, 225);
-                ctx.rotate(angle + arcSize / 2);
-                ctx.textAlign = "right";
-                ctx.fillStyle = "white";
-                ctx.font = "bold 14px sans-serif";
-                ctx.fillText(`${student.vorname} ${student.familienname.substring(0,1)}.`, 200, 5);
-                ctx.restore();
-            });
-        }
-
-        // --- OTÁČENÍ (FULLSCREEN + ZVUK) ---
-        function spinWheel() {
-            const students = database[currentClass] || [];
-            if (students.length === 0 || isSpinning) return;
-
-            isSpinning = true;
-            
-            if (fullscreenContainer.requestFullscreen) {
-                fullscreenContainer.requestFullscreen().catch(err => console.log(err));
-            }
-
-            const numSegments = students.length;
-            const randDegrees = Math.floor(Math.random() * 360) + 2880; 
-            canvas.style.transform = `rotate(${randDegrees}deg)`;
-
-            let tickCount = 0;
-            let tickInterval = setInterval(() => {
-                if (tickCount < 45) {
-                    playTickSound();
-                    tickCount++;
-                } else {
-                    clearInterval(tickInterval);
+            ]
+        },
+        {
+            "id": 5,
+            "jmeno": "Sophia Schneider",
+            "vorname": "Sophia",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Tomáš Müller",
+            "vorname": "Tomáš",
+            "familienname": "Müller",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-05"
                 }
-            }, 85);
-
-            setTimeout(() => {
-                isSpinning = false;
-                
-                const actualDegrees = randDegrees % 360;
-                const correctedDegrees = (360 - actualDegrees + 270) % 360;
-                const segmentDegrees = 360 / numSegments;
-                selectedStudentIndex = Math.floor(correctedDegrees / segmentDegrees) % numSegments;
-
-                playWinSound();
-
-                if (document.exitFullscreen) {
-                    document.exitFullscreen().catch(err => console.log(err));
-                }
-
-                setTimeout(() => {
-                    openGradeModal(students[selectedStudentIndex]);
-                }, 500);
-
-                canvas.style.transition = 'none';
-                canvas.style.transform = `rotate(${actualDegrees}deg)`;
-                setTimeout(() => {
-                    canvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.25, 1)';
-                }, 50);
-
-            }, 4000);
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Sophia Meyer",
+            "vorname": "Sophia",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Mia Weber",
+            "vorname": "Mia",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Jakub Meyer",
+            "vorname": "Jakub",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Anna Fischer",
+            "vorname": "Anna",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Jonas Müller",
+            "vorname": "Jonas",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Jakub Weber",
+            "vorname": "Jakub",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Tomáš Dvořák",
+            "vorname": "Tomáš",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Tomáš Schmidt",
+            "vorname": "Tomáš",
+            "familienname": "Schmidt",
+            "historie": []
         }
-
-        function openGradeModal(student) {
-            document.getElementById('modal-student-name').textContent = `${student.vorname} ${student.familienname}`;
-            document.getElementById('grade-input').value = "";
-            document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
-            gradeModal.style.display = "flex";
-            document.getElementById('grade-input').focus();
-        }
-
-        document.getElementById('btn-save-grade').addEventListener('click', () => {
-            const grade = document.getElementById('grade-input').value.trim();
-            const date = document.getElementById('date-input').value;
-
-            if (grade && selectedStudentIndex !== null) {
-                if(!database[currentClass][selectedStudentIndex].historie) {
-                    database[currentClass][selectedStudentIndex].historie = [];
+    ],
+    "7.B": [
+        {
+            "id": 0,
+            "jmeno": "Ben Černý",
+            "vorname": "Ben",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Emma Dvořák",
+            "vorname": "Emma",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Emma Müller",
+            "vorname": "Emma",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Jakub Weber",
+            "vorname": "Jakub",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-09"
                 }
-                
-                database[currentClass][selectedStudentIndex].historie.push({
-                    "známka": grade,
-                    "datum": date
-                });
-                
-                saveDataToServer();
-                renderStudents();
-            }
-            gradeModal.style.display = "none";
-        });
-
-        document.getElementById('btn-close-modal').addEventListener('click', () => {
-            gradeModal.style.display = "none";
-        });
-
-        classSelect.addEventListener('change', (e) => {
-            currentClass = e.target.value;
-            renderStudents();
-        });
-
-        document.getElementById('btn-add-student').addEventListener('click', () => {
-            const vnInput = document.getElementById('new-student-vn');
-            const fnInput = document.getElementById('new-student-fn');
-            const vn = vnInput.value.trim();
-            const fn = fnInput.value.trim();
-            
-            if (vn && fn && currentClass) {
-                const nextId = database[currentClass].length;
-                database[currentClass].push({
-                    "id": nextId,
-                    "jmeno": `${vn} ${fn}`,
-                    "vorname": vn,
-                    "familienname": fn,
-                    "historie": []
-                });
-                vnInput.value = "";
-                fnInput.value = "";
-                saveDataToServer();
-                renderStudents();
-            }
-        });
-
-        document.getElementById('btn-spin').addEventListener('click', () => {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            spinWheel();
-        });
-
-        // Spuštění aplikace: Načtení dat přímo ze zadané složky
-        loadDataFromServer();
-    </script>
-</body>
-</html>
+            ]
+        },
+        {
+            "id": 4,
+            "jmeno": "Tereza Meyer",
+            "vorname": "Tereza",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Maximilian Dvořák",
+            "vorname": "Maximilian",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Adéla Fischer",
+            "vorname": "Adéla",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Tereza Weber",
+            "vorname": "Tereza",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Anna Fischer",
+            "vorname": "Anna",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Jakub Meyer",
+            "vorname": "Jakub",
+            "familienname": "Meyer",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-12"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Maximilian Dvořák",
+            "vorname": "Maximilian",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Adéla Meyer",
+            "vorname": "Adéla",
+            "familienname": "Meyer",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "jmeno": "Jan Schmidt",
+            "vorname": "Jan",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-07"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Lukas Weber",
+            "vorname": "Lukas",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Jakub Schmidt",
+            "vorname": "Jakub",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Ben Schneider",
+            "vorname": "Ben",
+            "familienname": "Schneider",
+            "historie": []
+        }
+    ],
+    "7.C": [
+        {
+            "id": 0,
+            "jmeno": "Tereza Dvořák",
+            "vorname": "Tereza",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Lukas Svoboda",
+            "vorname": "Lukas",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-12"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "jmeno": "Emma Weber",
+            "vorname": "Emma",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-05"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-23"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "jmeno": "Tomáš Schmidt",
+            "vorname": "Tomáš",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Lukas Dvořák",
+            "vorname": "Lukas",
+            "familienname": "Dvořák",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "jmeno": "Anna Fischer",
+            "vorname": "Anna",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Jonas Müller",
+            "vorname": "Jonas",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Lukas Meyer",
+            "vorname": "Lukas",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Emma Černý",
+            "vorname": "Emma",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Tomáš Svoboda",
+            "vorname": "Tomáš",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Lukas Fischer",
+            "vorname": "Lukas",
+            "familienname": "Fischer",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-25"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "jmeno": "Anna Novák",
+            "vorname": "Anna",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Tereza Meyer",
+            "vorname": "Tereza",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Emma Weber",
+            "vorname": "Emma",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        }
+    ],
+    "8.A": [
+        {
+            "id": 0,
+            "jmeno": "Jakub Svoboda",
+            "vorname": "Jakub",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-04"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "jmeno": "Ben Svoboda",
+            "vorname": "Ben",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-02"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "jmeno": "Jan Dvořák",
+            "vorname": "Jan",
+            "familienname": "Dvořák",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "jmeno": "Eliška Novák",
+            "vorname": "Eliška",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Jan Svoboda",
+            "vorname": "Jan",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Sophia Schneider",
+            "vorname": "Sophia",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jakub Schmidt",
+            "vorname": "Jakub",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-07"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Eliška Schneider",
+            "vorname": "Eliška",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Jakub Novotný",
+            "vorname": "Jakub",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-22"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Eliška Schneider",
+            "vorname": "Eliška",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Emma Meyer",
+            "vorname": "Emma",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Maximilian Svoboda",
+            "vorname": "Maximilian",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-04"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Anna Svoboda",
+            "vorname": "Anna",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "3",
+                    "datum": "2026-06-02"
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "jmeno": "Jakub Dvořák",
+            "vorname": "Jakub",
+            "familienname": "Dvořák",
+            "historie": []
+        }
+    ],
+    "8.B": [
+        {
+            "id": 0,
+            "jmeno": "Anna Schmidt",
+            "vorname": "Anna",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Mia Novotný",
+            "vorname": "Mia",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Lukas Černý",
+            "vorname": "Lukas",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Adéla Müller",
+            "vorname": "Adéla",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Lukas Svoboda",
+            "vorname": "Lukas",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Adéla Schmidt",
+            "vorname": "Adéla",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jan Novotný",
+            "vorname": "Jan",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "3",
+                    "datum": "2026-06-08"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "jmeno": "Sophia Novák",
+            "vorname": "Sophia",
+            "familienname": "Novák",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-06"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Emma Novotný",
+            "vorname": "Emma",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Jonas Weber",
+            "vorname": "Jonas",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Adéla Novák",
+            "vorname": "Adéla",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Anna Novotný",
+            "vorname": "Anna",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-02"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Jan Fischer",
+            "vorname": "Jan",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Ben Meyer",
+            "vorname": "Ben",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Jakub Müller",
+            "vorname": "Jakub",
+            "familienname": "Müller",
+            "historie": []
+        }
+    ],
+    "8.C": [
+        {
+            "id": 0,
+            "jmeno": "Adéla Fischer",
+            "vorname": "Adéla",
+            "familienname": "Fischer",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-13"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "jmeno": "Sophia Schneider",
+            "vorname": "Sophia",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Adéla Novotný",
+            "vorname": "Adéla",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Jonas Fischer",
+            "vorname": "Jonas",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Adéla Novák",
+            "vorname": "Adéla",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Anna Novák",
+            "vorname": "Anna",
+            "familienname": "Novák",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-20"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "jmeno": "Jakub Novák",
+            "vorname": "Jakub",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Eliška Černý",
+            "vorname": "Eliška",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Sophia Dvořák",
+            "vorname": "Sophia",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Mia Novák",
+            "vorname": "Mia",
+            "familienname": "Novák",
+            "historie": [
+                {
+                    "známka": "3",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Sophia Müller",
+            "vorname": "Sophia",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Tomáš Černý",
+            "vorname": "Tomáš",
+            "familienname": "Černý",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "jmeno": "Emma Weber",
+            "vorname": "Emma",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Jan Novák",
+            "vorname": "Jan",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Adéla Svoboda",
+            "vorname": "Adéla",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Ben Svoboda",
+            "vorname": "Ben",
+            "familienname": "Svoboda",
+            "historie": []
+        }
+    ],
+    "9.A": [
+        {
+            "id": 0,
+            "jmeno": "Mia Weber",
+            "vorname": "Mia",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Anna Novotný",
+            "vorname": "Anna",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Ben Novotný",
+            "vorname": "Ben",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Mia Svoboda",
+            "vorname": "Mia",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Anna Müller",
+            "vorname": "Anna",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Jan Svoboda",
+            "vorname": "Jan",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jakub Fischer",
+            "vorname": "Jakub",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Jonas Schmidt",
+            "vorname": "Jonas",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Sophia Schmidt",
+            "vorname": "Sophia",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Maximilian Weber",
+            "vorname": "Maximilian",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Maximilian Novák",
+            "vorname": "Maximilian",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Anna Meyer",
+            "vorname": "Anna",
+            "familienname": "Meyer",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-13"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Ben Černý",
+            "vorname": "Ben",
+            "familienname": "Černý",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-14"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Jan Müller",
+            "vorname": "Jan",
+            "familienname": "Müller",
+            "historie": []
+        }
+    ],
+    "9.B": [
+        {
+            "id": 0,
+            "jmeno": "Ben Novák",
+            "vorname": "Ben",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Tereza Weber",
+            "vorname": "Tereza",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-25"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "jmeno": "Anna Dvořák",
+            "vorname": "Anna",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Jonas Černý",
+            "vorname": "Jonas",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Tereza Novák",
+            "vorname": "Tereza",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Tomáš Novotný",
+            "vorname": "Tomáš",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Jonas Fischer",
+            "vorname": "Jonas",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Mia Dvořák",
+            "vorname": "Mia",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Tomáš Černý",
+            "vorname": "Tomáš",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Ben Dvořák",
+            "vorname": "Ben",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Eliška Dvořák",
+            "vorname": "Eliška",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Ben Schneider",
+            "vorname": "Ben",
+            "familienname": "Schneider",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-05"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Mia Černý",
+            "vorname": "Mia",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Jakub Svoboda",
+            "vorname": "Jakub",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Jonas Fischer",
+            "vorname": "Jonas",
+            "familienname": "Fischer",
+            "historie": []
+        }
+    ],
+    "9.C": [
+        {
+            "id": 0,
+            "jmeno": "Eliška Schmidt",
+            "vorname": "Eliška",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-11"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "jmeno": "Jakub Schneider",
+            "vorname": "Jakub",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Maximilian Schmidt",
+            "vorname": "Maximilian",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Anna Schmidt",
+            "vorname": "Anna",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Eliška Meyer",
+            "vorname": "Eliška",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Mia Černý",
+            "vorname": "Mia",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jonas Svoboda",
+            "vorname": "Jonas",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Emma Schneider",
+            "vorname": "Emma",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Lukas Dvořák",
+            "vorname": "Lukas",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Emma Schneider",
+            "vorname": "Emma",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Emma Schneider",
+            "vorname": "Emma",
+            "familienname": "Schneider",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-03"
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "jmeno": "Maximilian Weber",
+            "vorname": "Maximilian",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Eliška Schneider",
+            "vorname": "Eliška",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Emma Schmidt",
+            "vorname": "Emma",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-22"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "jmeno": "Jan Schneider",
+            "vorname": "Jan",
+            "familienname": "Schneider",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-18"
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "jmeno": "Anna Müller",
+            "vorname": "Anna",
+            "familienname": "Müller",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-24"
+                }
+            ]
+        }
+    ]
+}
