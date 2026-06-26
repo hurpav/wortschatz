@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolo štěstí pro zkoušení</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 200px;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 10px; }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .panel {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            flex: 1;
+        }
+
+        .wheel-area {
+            flex: 1.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Fullscreen styl pro kontejner kola */
+        #fullscreen-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--background);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        #fullscreen-container:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            background: #111827;
+            color: white;
+        }
+
+        /* Kolo štěstí */
+        .wheel-wrapper {
+            position: relative;
+            width: 450px;
+            height: 450px;
+        }
+
+        /* Šipka ukazující na výherce */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #ef4444;
+            z-index: 10;
+        }
+
+        canvas {
+            border-radius: 50%;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.25, 1);
+        }
+
+        /* Formuláře a prvky */
+        label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: var(--secondary); }
+        .btn-spin { background-color: #10b981; font-size: 18px; padding: 15px; margin-top: 15px;}
+        .btn-spin:hover { background-color: #059669; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        /* Seznam žáků */
+        .student-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px;
+            margin-bottom: 15px;
+        }
+
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .student-item button {
+            width: auto;
+            padding: 2px 8px;
+            margin: 0;
+        }
+
+        /* Modal pro zápis známky */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Učitelské kolo štěstí 🎯</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h3>1. Načtení & Výběr třídy</h3>
+            <input type="file" id="json-file" accept=".json">
+            
+            <label for="class-select">Vyberte třídu:</label>
+            <select id="class-select" disabled>
+                <option value="">-- Nejprve nahrajte JSON nebo použijte demo --</option>
+            </select>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+
+            <h3>2. Správa žáků v aktuální třídě</h3>
+            <div class="student-list" id="students-container">
+                </div>
+
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="new-student-name" placeholder="Jméno nového žáka">
+                <button id="btn-add-student" style="width: auto;">Přidat</button>
+            </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+
+            <h3>3. Záloha dat</h3>
+            <button id="btn-export" class="btn-spin" style="background-color: #6b7280;">Exportovat upravený JSON</button>
+        </div>
+
+        <div class="panel wheel-area">
+            <div id="fullscreen-container">
+                <div class="wheel-wrapper">
+                    <div class="pointer"></div>
+                    <canvas id="wheel" width="450" height="450"></canvas>
+                </div>
+                <button id="btn-spin" class="btn-spin">ROZTOČIT KOLO 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="grade-modal">
+        <div class="modal-content">
+            <h2 id="modal-student-name">Vybraný žák</h2>
+            <label for="grade-input">Známka:</label>
+            <input type="text" id="grade-input" placeholder="Např. 1, 2-, N...">
+
+            <label for="date-input">Datum:</label>
+            <input type="date" id="date-input">
+
+            <button id="btn-save-grade" class="btn-spin" style="margin-top: 10px;">Uložit hodnocení</button>
+            <button id="btn-close-modal" class="btn-danger" style="margin-top: 5px;">Zavřít bez uložení</button>
+        </div>
+    </div>
