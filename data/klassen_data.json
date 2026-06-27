@@ -1,0 +1,1213 @@
+{
+    "7.A": [
+        {
+            "id": 0,
+            "jmeno": "Lukas Svoboda",
+            "vorname": "Lukas",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Jonas Müller",
+            "vorname": "Jonas",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Sophia Fischer",
+            "vorname": "Sophia",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Tomáš Weber",
+            "vorname": "Tomáš",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-03"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "jmeno": "Tomáš Fischer",
+            "vorname": "Tomáš",
+            "familienname": "Fischer",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-08"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "jmeno": "Sophia Schneider",
+            "vorname": "Sophia",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Tomáš Müller",
+            "vorname": "Tomáš",
+            "familienname": "Müller",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-05"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Sophia Meyer",
+            "vorname": "Sophia",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Mia Weber",
+            "vorname": "Mia",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Jakub Meyer",
+            "vorname": "Jakub",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Anna Fischer",
+            "vorname": "Anna",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Jonas Müller",
+            "vorname": "Jonas",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Jakub Weber",
+            "vorname": "Jakub",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Tomáš Dvořák",
+            "vorname": "Tomáš",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Tomáš Schmidt",
+            "vorname": "Tomáš",
+            "familienname": "Schmidt",
+            "historie": []
+        }
+    ],
+    "7.B": [
+        {
+            "id": 0,
+            "jmeno": "Ben Černý",
+            "vorname": "Ben",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Emma Dvořák",
+            "vorname": "Emma",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Emma Müller",
+            "vorname": "Emma",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Jakub Weber",
+            "vorname": "Jakub",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "jmeno": "Tereza Meyer",
+            "vorname": "Tereza",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Maximilian Dvořák",
+            "vorname": "Maximilian",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Adéla Fischer",
+            "vorname": "Adéla",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Tereza Weber",
+            "vorname": "Tereza",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Anna Fischer",
+            "vorname": "Anna",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Jakub Meyer",
+            "vorname": "Jakub",
+            "familienname": "Meyer",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-12"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Maximilian Dvořák",
+            "vorname": "Maximilian",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Adéla Meyer",
+            "vorname": "Adéla",
+            "familienname": "Meyer",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "jmeno": "Jan Schmidt",
+            "vorname": "Jan",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-07"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Lukas Weber",
+            "vorname": "Lukas",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Jakub Schmidt",
+            "vorname": "Jakub",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Ben Schneider",
+            "vorname": "Ben",
+            "familienname": "Schneider",
+            "historie": []
+        }
+    ],
+    "7.C": [
+        {
+            "id": 0,
+            "jmeno": "Tereza Dvořák",
+            "vorname": "Tereza",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Lukas Svoboda",
+            "vorname": "Lukas",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-12"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "jmeno": "Emma Weber",
+            "vorname": "Emma",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-05"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-23"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "jmeno": "Tomáš Schmidt",
+            "vorname": "Tomáš",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Lukas Dvořák",
+            "vorname": "Lukas",
+            "familienname": "Dvořák",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "jmeno": "Anna Fischer",
+            "vorname": "Anna",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Jonas Müller",
+            "vorname": "Jonas",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Lukas Meyer",
+            "vorname": "Lukas",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Emma Černý",
+            "vorname": "Emma",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Tomáš Svoboda",
+            "vorname": "Tomáš",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Lukas Fischer",
+            "vorname": "Lukas",
+            "familienname": "Fischer",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-25"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "jmeno": "Anna Novák",
+            "vorname": "Anna",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Tereza Meyer",
+            "vorname": "Tereza",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Emma Weber",
+            "vorname": "Emma",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        }
+    ],
+    "8.A": [
+        {
+            "id": 0,
+            "jmeno": "Jakub Svoboda",
+            "vorname": "Jakub",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-04"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "jmeno": "Ben Svoboda",
+            "vorname": "Ben",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-02"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "jmeno": "Jan Dvořák",
+            "vorname": "Jan",
+            "familienname": "Dvořák",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "jmeno": "Eliška Novák",
+            "vorname": "Eliška",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Jan Svoboda",
+            "vorname": "Jan",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Sophia Schneider",
+            "vorname": "Sophia",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jakub Schmidt",
+            "vorname": "Jakub",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-07"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Eliška Schneider",
+            "vorname": "Eliška",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Jakub Novotný",
+            "vorname": "Jakub",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-22"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Eliška Schneider",
+            "vorname": "Eliška",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Emma Meyer",
+            "vorname": "Emma",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Maximilian Svoboda",
+            "vorname": "Maximilian",
+            "familienname": "Svoboda",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-04"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Anna Svoboda",
+            "vorname": "Anna",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "3",
+                    "datum": "2026-06-02"
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "jmeno": "Jakub Dvořák",
+            "vorname": "Jakub",
+            "familienname": "Dvořák",
+            "historie": []
+        }
+    ],
+    "8.B": [
+        {
+            "id": 0,
+            "jmeno": "Anna Schmidt",
+            "vorname": "Anna",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Mia Novotný",
+            "vorname": "Mia",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Lukas Černý",
+            "vorname": "Lukas",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Adéla Müller",
+            "vorname": "Adéla",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Lukas Svoboda",
+            "vorname": "Lukas",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Adéla Schmidt",
+            "vorname": "Adéla",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jan Novotný",
+            "vorname": "Jan",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "3",
+                    "datum": "2026-06-08"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "jmeno": "Sophia Novák",
+            "vorname": "Sophia",
+            "familienname": "Novák",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-06"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Emma Novotný",
+            "vorname": "Emma",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Jonas Weber",
+            "vorname": "Jonas",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Adéla Novák",
+            "vorname": "Adéla",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Anna Novotný",
+            "vorname": "Anna",
+            "familienname": "Novotný",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-02"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Jan Fischer",
+            "vorname": "Jan",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Ben Meyer",
+            "vorname": "Ben",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Jakub Müller",
+            "vorname": "Jakub",
+            "familienname": "Müller",
+            "historie": []
+        }
+    ],
+    "8.C": [
+        {
+            "id": 0,
+            "jmeno": "Adéla Fischer",
+            "vorname": "Adéla",
+            "familienname": "Fischer",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-13"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "jmeno": "Sophia Schneider",
+            "vorname": "Sophia",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Adéla Novotný",
+            "vorname": "Adéla",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Jonas Fischer",
+            "vorname": "Jonas",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Adéla Novák",
+            "vorname": "Adéla",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Anna Novák",
+            "vorname": "Anna",
+            "familienname": "Novák",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-20"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "jmeno": "Jakub Novák",
+            "vorname": "Jakub",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Eliška Černý",
+            "vorname": "Eliška",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Sophia Dvořák",
+            "vorname": "Sophia",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Mia Novák",
+            "vorname": "Mia",
+            "familienname": "Novák",
+            "historie": [
+                {
+                    "známka": "3",
+                    "datum": "2026-06-09"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "jmeno": "Sophia Müller",
+            "vorname": "Sophia",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Tomáš Černý",
+            "vorname": "Tomáš",
+            "familienname": "Černý",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "jmeno": "Emma Weber",
+            "vorname": "Emma",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Jan Novák",
+            "vorname": "Jan",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Adéla Svoboda",
+            "vorname": "Adéla",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Ben Svoboda",
+            "vorname": "Ben",
+            "familienname": "Svoboda",
+            "historie": []
+        }
+    ],
+    "9.A": [
+        {
+            "id": 0,
+            "jmeno": "Mia Weber",
+            "vorname": "Mia",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Anna Novotný",
+            "vorname": "Anna",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Ben Novotný",
+            "vorname": "Ben",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Mia Svoboda",
+            "vorname": "Mia",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Anna Müller",
+            "vorname": "Anna",
+            "familienname": "Müller",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Jan Svoboda",
+            "vorname": "Jan",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jakub Fischer",
+            "vorname": "Jakub",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Jonas Schmidt",
+            "vorname": "Jonas",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-19"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "jmeno": "Sophia Schmidt",
+            "vorname": "Sophia",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Maximilian Weber",
+            "vorname": "Maximilian",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Maximilian Novák",
+            "vorname": "Maximilian",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Anna Meyer",
+            "vorname": "Anna",
+            "familienname": "Meyer",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-13"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Ben Černý",
+            "vorname": "Ben",
+            "familienname": "Černý",
+            "historie": [
+                {
+                    "známka": "1-",
+                    "datum": "2026-06-14"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "jmeno": "Sophia Novotný",
+            "vorname": "Sophia",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Jan Müller",
+            "vorname": "Jan",
+            "familienname": "Müller",
+            "historie": []
+        }
+    ],
+    "9.B": [
+        {
+            "id": 0,
+            "jmeno": "Ben Novák",
+            "vorname": "Ben",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 1,
+            "jmeno": "Tereza Weber",
+            "vorname": "Tereza",
+            "familienname": "Weber",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-25"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "jmeno": "Anna Dvořák",
+            "vorname": "Anna",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Tereza Černý",
+            "vorname": "Tereza",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Jonas Černý",
+            "vorname": "Jonas",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Tereza Novák",
+            "vorname": "Tereza",
+            "familienname": "Novák",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Tomáš Novotný",
+            "vorname": "Tomáš",
+            "familienname": "Novotný",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Jonas Fischer",
+            "vorname": "Jonas",
+            "familienname": "Fischer",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Mia Dvořák",
+            "vorname": "Mia",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Tomáš Černý",
+            "vorname": "Tomáš",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Ben Dvořák",
+            "vorname": "Ben",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 11,
+            "jmeno": "Eliška Dvořák",
+            "vorname": "Eliška",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Ben Schneider",
+            "vorname": "Ben",
+            "familienname": "Schneider",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-05"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "jmeno": "Mia Černý",
+            "vorname": "Mia",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 14,
+            "jmeno": "Jakub Svoboda",
+            "vorname": "Jakub",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 15,
+            "jmeno": "Jonas Fischer",
+            "vorname": "Jonas",
+            "familienname": "Fischer",
+            "historie": []
+        }
+    ],
+    "9.C": [
+        {
+            "id": 0,
+            "jmeno": "Eliška Schmidt",
+            "vorname": "Eliška",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-11"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "jmeno": "Jakub Schneider",
+            "vorname": "Jakub",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 2,
+            "jmeno": "Maximilian Schmidt",
+            "vorname": "Maximilian",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 3,
+            "jmeno": "Anna Schmidt",
+            "vorname": "Anna",
+            "familienname": "Schmidt",
+            "historie": []
+        },
+        {
+            "id": 4,
+            "jmeno": "Eliška Meyer",
+            "vorname": "Eliška",
+            "familienname": "Meyer",
+            "historie": []
+        },
+        {
+            "id": 5,
+            "jmeno": "Mia Černý",
+            "vorname": "Mia",
+            "familienname": "Černý",
+            "historie": []
+        },
+        {
+            "id": 6,
+            "jmeno": "Jonas Svoboda",
+            "vorname": "Jonas",
+            "familienname": "Svoboda",
+            "historie": []
+        },
+        {
+            "id": 7,
+            "jmeno": "Emma Schneider",
+            "vorname": "Emma",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 8,
+            "jmeno": "Lukas Dvořák",
+            "vorname": "Lukas",
+            "familienname": "Dvořák",
+            "historie": []
+        },
+        {
+            "id": 9,
+            "jmeno": "Emma Schneider",
+            "vorname": "Emma",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 10,
+            "jmeno": "Emma Schneider",
+            "vorname": "Emma",
+            "familienname": "Schneider",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-03"
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "jmeno": "Maximilian Weber",
+            "vorname": "Maximilian",
+            "familienname": "Weber",
+            "historie": []
+        },
+        {
+            "id": 12,
+            "jmeno": "Eliška Schneider",
+            "vorname": "Eliška",
+            "familienname": "Schneider",
+            "historie": []
+        },
+        {
+            "id": 13,
+            "jmeno": "Emma Schmidt",
+            "vorname": "Emma",
+            "familienname": "Schmidt",
+            "historie": [
+                {
+                    "známka": "2",
+                    "datum": "2026-06-22"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "jmeno": "Jan Schneider",
+            "vorname": "Jan",
+            "familienname": "Schneider",
+            "historie": [
+                {
+                    "známka": "2-",
+                    "datum": "2026-06-18"
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "jmeno": "Anna Müller",
+            "vorname": "Anna",
+            "familienname": "Müller",
+            "historie": [
+                {
+                    "známka": "1",
+                    "datum": "2026-06-24"
+                }
+            ]
+        }
+    ]
+}

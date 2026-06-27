@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>Wortsalat Generator v1.2</title>
+=======
+    <title>Wortsalat Generator v1.5</title>
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
@@ -233,7 +237,7 @@
 <div class="container">
     <header>
         <h1>🔠 Wortsalat - Generátor osmisměrek</h1>
-        <p>Vytváří unikátní šifrované mřížky pro dva žáky na jednu stránku A4 (2x A5 na šířku).</p>
+        <p>Vytváří 2 identické kopie mřížky na jednu stránku A4 (2x A5 na šířku).</p>
     </header>
 
     <div class="card">
@@ -249,29 +253,45 @@
             </label>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Sekce A: Výběr z databáze -->
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         <div id="sectionDb" class="grid-config">
             <div class="form-group">
                 <label for="themeSelect">Zvolit téma:</label>
                 <select id="themeSelect" onchange="loadTheme()">
                     <option value="schulsachen">Schulsachen (Pomůcky)</option>
                     <option value="familie">Familie (Rodina)</option>
+                    <option value="berufe">Berufe (Povolání)</option>
+                    <option value="hobbys">Hobbys (Záliby)</option>
+                    <option value="sport">Sportarten (Sporty)</option>
+                    <option value="wochentage">Wochentage (Dny v týdnu)</option>
+                    <option value="essen">Essen (Jídlo)</option>
+                    <option value="stundenplan">Stundenplan / Monate</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Rozsah ID slovíček:</label>
-                <div class="range-group">
-                    <input type="number" id="idFrom" min="1" value="1" onchange="processWords()">
-                    <span>až</span>
-                    <input type="number" id="idTo" min="1" value="10" onchange="processWords()">
+                <label>Počet náhodných slov:</label>
+                <div class="range-group" style="max-width: 150px;">
+                    <input type="number" id="randomCount" min="3" max="20" value="10" onchange="processWords()">
                 </div>
             </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Sekce B: Ruční zadání slovíček -->
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         <div id="sectionManual" class="form-group hidden">
             <label for="customWordsInput">Zadejte slovíčka (jedno na řádek, formát: Německy - Česky):</label>
             <textarea id="customWordsInput" placeholder="der Hund - pes&#10;die Katze - kočka&#10;das Pferd - kůň" oninput="processWords()"></textarea>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- Společné nastavení velikosti sítě -->
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         <div class="form-group" style="max-width: 300px;">
             <label for="gridSize">Velikost sítě (čtverec):</label>
             <select id="gridSize" onchange="processWords()">
@@ -283,16 +303,16 @@
         </div>
         
         <div class="btn-container">
-            <button class="btn btn-primary" onclick="generatePDF()">📄 Vygenerovat PDF pro tisk (2x A5)</button>
+            <button class="btn btn-primary" onclick="generatePDF()">📄 Vygenerovat PDF pro tisk (2x stejné A5)</button>
             <button class="btn btn-accent" id="toggleKeyBtn" onclick="toggleKey()">👁️ Zobrazit klíč náhledu</button>
         </div>
     </div>
 
     <div class="card">
-        <h2>Živý náhled (Unikátní mřížky pro Žáka 1 a Žáka 2)</h2>
+        <h2>Živý náhled (Identické mřížky pro snadné rozstřižení A4)</h2>
         <div class="preview-split" id="previewSplit">
             <div class="preview-page" id="pageLeft">
-                <div class="preview-title">Wortsalat</div>
+                <div class="preview-title">Wortsalat (Kopie 1)</div>
                 <div class="wordsearch-grid" id="gridLeft"></div>
                 <div class="hints-section">
                     <div class="hints-title">Finde tyto výrazy (v němčině bez členu):</div>
@@ -300,7 +320,7 @@
                 </div>
             </div>
             <div class="preview-page" id="pageRight">
-                <div class="preview-title">Wortsalat</div>
+                <div class="preview-title">Wortsalat (Kopie 2)</div>
                 <div class="wordsearch-grid" id="gridRight"></div>
                 <div class="hints-section">
                     <div class="hints-title">Finde tyto výrazy (v němčině bez členu):</div>
@@ -312,7 +332,11 @@
 </div>
 
 <script>
+<<<<<<< HEAD
     // Lokální databáze témat
+=======
+    // Lokální záložní databáze pro offline běh
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
     const localDatabase = {
         "schulsachen": [
             {"id": 1, "de": "der Rucksack", "cz": "batoh"},
@@ -338,14 +362,17 @@
     };
 
     let activeWords = [];     
-    let studentLeftData = null;
-    let studentRightData = null;
+    let studentLeftData = null; 
     let showKey = false;
 
     const solutionColors = [
         "#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa", 
         "#cffafe", "#e9d5ff", "#fca5a5", "#ccfbf1", "#e2e8f0"
     ];
+
+    function removeDiacritics(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
         loadTheme();
@@ -361,6 +388,7 @@
             document.getElementById('sectionDb').classList.add('hidden');
             document.getElementById('sectionManual').classList.remove('hidden');
             processWords();
+<<<<<<< HEAD
         }
     }
 
@@ -372,7 +400,44 @@
             const ids = dbItems.map(item => parseInt(item.id) || 0).filter(id => id > 0);
             document.getElementById('idFrom').value = Math.min(...ids);
             document.getElementById('idTo').value = Math.max(...ids); 
+=======
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         }
+    }
+
+    async function loadTheme() {
+        const key = document.getElementById('themeSelect').value;
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
+        
+        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
+        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+
+        try {
+            let response = await fetch(primaryUrl);
+            if (!response.ok) response = await fetch(backupUrl);
+            if (!response.ok) throw new Error("JSON file not found");
+
+            const data = await response.json();
+            let rawData = data[key] || data.words || data;
+            
+            if (rawData && !Array.isArray(rawData) && typeof rawData === 'object') {
+                const firstKey = Object.keys(rawData).find(k => Array.isArray(rawData[k]));
+                allFetchedItems = firstKey ? rawData[firstKey] : Object.values(rawData).find(v => Array.isArray(v)) || [];
+            } else {
+                allFetchedItems = Array.isArray(rawData) ? rawData : [];
+            }
+        } catch (err) {
+            console.warn("Načítám z lokální databáze.");
+            allFetchedItems = localDatabase[key] || [];
+        }
+
+        const randInput = document.getElementById('randomCount');
+        if (allFetchedItems.length > 0) {
+            randInput.max = allFetchedItems.length;
+            randInput.value = Math.min(10, allFetchedItems.length);
+        }
+        
         processWords();
     }
 
@@ -383,11 +448,16 @@
         
         lines.forEach((line, index) => {
             if (!line.trim()) return;
+<<<<<<< HEAD
             
             let de = "";
             let cz = "";
             
             // Pokud řádek obsahuje oddělovač (pomlčka nebo středník)
+=======
+            let de = "", cz = "";
+            
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
             if (line.includes('-')) {
                 const parts = line.split('-');
                 de = parts[0].trim();
@@ -397,6 +467,7 @@
                 de = parts[0].trim();
                 cz = parts[1].trim();
             } else {
+<<<<<<< HEAD
                 // Pokud zadal jen jedno slovo, použijeme ho pro DE i CZ náhled
                 de = line.trim();
                 cz = line.trim();
@@ -429,6 +500,32 @@
         const size = parseInt(document.getElementById('gridSize').value) || 12;
 
         activeWords = rawWords
+=======
+                de = line.trim();
+                cz = line.trim();
+            }
+            if (de) parsed.push({ id: index + 1, de: de, cz: cz });
+        });
+        return parsed;
+    }
+
+    function processWords() {
+        const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+        let poolWords = [];
+
+        if (mode === 'db') {
+            poolWords = [...allFetchedItems];
+            const count = parseInt(document.getElementById('randomCount').value) || 10;
+            poolWords.sort(() => 0.5 - Math.random());
+            poolWords = poolWords.slice(0, count);
+        } else {
+            poolWords = parseManualWords();
+        }
+
+        const size = parseInt(document.getElementById('gridSize').value) || 12;
+
+        activeWords = poolWords
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
             .map(item => {
                 let cleanDe = (item.de || "").trim();
                 cleanDe = cleanDe.replace(/^(der|die|das)\s+/i, ""); 
@@ -446,8 +543,6 @@
             .filter(w => w.searchName.length > 0 && w.searchName.length <= size);
 
         studentLeftData = generatePuzzle(activeWords, size);
-        studentRightData = generatePuzzle(activeWords, size);
-
         renderHtmlPreview();
     }
 
@@ -455,10 +550,14 @@
         let grid = Array(size).fill(null).map(() => Array(size).fill(''));
         let solutionMap = Array(size).fill(null).map(() => Array(size).fill(-1));
         
+<<<<<<< HEAD
         const directions = [
             [0, 1], [1, 0], [1, 1], [1, -1]
         ];
 
+=======
+        const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         let placedWords = [];
         const sortedWords = [...words].sort((a, b) => b.searchName.length - a.searchName.length);
 
@@ -530,7 +629,7 @@
     }
 
     function renderHtmlPreview() {
-        if (!studentLeftData || !studentRightData) return;
+        if (!studentLeftData) return;
 
         const renderGrid = (containerId, puzzleData) => {
             const container = document.getElementById(containerId);
@@ -548,7 +647,6 @@
                         cell.style.backgroundColor = solutionColors[colorIdx];
                         cell.style.border = "1px solid #000";
                     }
-                    
                     container.appendChild(cell);
                 }
             }
@@ -560,7 +658,11 @@
             const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
 
             if (sortedHints.length === 0) {
+<<<<<<< HEAD
                 container.innerHTML = '<span style="color:red">Žádná slova zadána nebo se nevešla!</span>';
+=======
+                container.innerHTML = '<span style="color:red">Žádná slova!</span>';
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
                 return;
             }
 
@@ -573,19 +675,91 @@
         };
 
         renderGrid('gridLeft', studentLeftData);
-        renderGrid('gridRight', studentRightData);
+        renderGrid('gridRight', studentLeftData);
         renderHints('hintsLeft', studentLeftData);
-        renderHints('hintsRight', studentRightData);
+        renderHints('hintsRight', studentLeftData);
+    }
+
+    // Pomocná funkce pro vykreslení A5 poloviny (vytažená z vnitřku pro stabilitu)
+    function drawHalfPagePDF(doc, offsetX, puzzleData, themeText, halfWidth) {
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(15, 118, 110); 
+        doc.text("WORTSALAT", offsetX + 12, 16);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Thema: ${themeText}`, offsetX + 12, 22);
+
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text("Name: ______________________", offsetX + 12, 30);
+        doc.text("Klasse: _________", offsetX + halfWidth - 40, 30);
+
+        const size = puzzleData.size;
+        const startX = offsetX + 12;
+        const startY = 36;
+        const cellSize = Math.min(7.5, (halfWidth - 24) / size); 
+        
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(cellSize * 1.4); 
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(71, 85, 105);
+
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const x = startX + (c * cellSize);
+                const y = startY + (r * cellSize);
+                
+                doc.setFillColor(255, 255, 255);
+                doc.rect(x, y, cellSize, cellSize, 'F');
+                doc.rect(x, y, cellSize, cellSize, 'S');
+                
+                const char = puzzleData.grid[r][c];
+                const textWidth = doc.getTextWidth(char);
+                const textX = x + (cellSize - textWidth) / 2;
+                const textY = y + (cellSize + (cellSize * 0.3)) / 2; 
+                
+                doc.setTextColor(30, 41, 59);
+                doc.text(char, textX, textY);
+            }
+        }
+
+        const hintsY = startY + (size * cellSize) + 8;
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(15, 118, 110);
+        doc.text("Finde tyto vyrazy (nemecky bez clenu):", startX, hintsY);
+
+        const sortedHints = [...puzzleData.placedWords].sort((a,b) => a.cz.localeCompare(b.cz));
+        
+        doc.setFont("Helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(30, 41, 59);
+        
+        const colWidth = (halfWidth - 24) / 3;
+        sortedHints.forEach((word, idx) => {
+            const c = idx % 3;
+            const r = Math.floor(idx / 3);
+            const hX = startX + (c * colWidth);
+            const hY = hintsY + 5 + (r * 5);
+            
+            if (hY < 200) {
+                const safeCzWord = removeDiacritics(word.cz);
+                doc.text(`[ ] ${safeCzWord}`, hX, hY);
+            }
+        });
     }
 
     async function generatePDF() {
-        if (!studentLeftData || !studentRightData) return;
+        if (!studentLeftData) return;
         const { jsPDF } = window.jspdf;
         
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         const halfWidth = 297 / 2;
         
         const mode = document.querySelector('input[name="sourceMode"]:checked').value;
+<<<<<<< HEAD
         let themeText = "Vlastní výběr";
         if (mode === 'db') {
             themeText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
@@ -658,9 +832,17 @@
                     doc.text(`[ ] ${word.cz}`, hX, hY);
                 }
             });
+=======
+        let themeText = "Vlastni vyber";
+        if (mode === 'db') {
+            themeText = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         }
+        
+        const safeThemeText = removeDiacritics(themeText);
 
-        drawHalfPage(0, studentLeftData);
+        // Vykreslení obou identických stran
+        drawHalfPagePDF(doc, 0, studentLeftData, safeThemeText, halfWidth);
 
         doc.setLineWidth(0.3);
         doc.setDrawColor(148, 163, 184);
@@ -668,9 +850,13 @@
         doc.line(halfWidth, 0, halfWidth, 210);
         doc.setLineDashPattern([], 0); 
 
-        drawHalfPage(halfWidth, studentRightData);
+        drawHalfPagePDF(doc, halfWidth, studentLeftData, safeThemeText, halfWidth);
 
+<<<<<<< HEAD
         const labelFile = themeText.toLowerCase().replace(/[^a-z0-9]/g, "-");
+=======
+        const labelFile = safeThemeText.toLowerCase().replace(/[^a-z0-9]/g, "-");
+>>>>>>> 00e714c60ba23288040cde0cbe1dc139b37a2b00
         doc.save(`wortsalat-2xA5-${labelFile}.pdf`);
     }
 </script>
