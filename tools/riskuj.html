@@ -91,7 +91,6 @@
             box-sizing: border-box;
         }
 
-        /* Radio group pro Buzzer */
         .buzzer-toggle {
             display: flex;
             gap: 15px;
@@ -105,7 +104,6 @@
             cursor: pointer;
         }
 
-        /* Sekce konfigurace jmen týmů */
         .teams-config-list {
             display: grid;
             grid-template-columns: 1fr;
@@ -140,10 +138,8 @@
         }
         .btn-start:hover { background: #c0392b; }
 
-        /* Herní plocha */
         .game-area { display: none; }
         
-        /* Informační lišta tahu */
         .turn-announcer {
             background: #d1ecf1;
             color: #0c5460;
@@ -197,7 +193,6 @@
         .question-card:hover { transform: scale(1.03); background: #2c3e50; }
         .question-card.disabled { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; transform: none; }
 
-        /* Týmy spodní panel */
         .teams-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -234,7 +229,6 @@
         .team-name { font-weight: bold; color: var(--primary); font-size: 18px; }
         .team-score { font-size: 22px; font-weight: bold; color: var(--accent); margin-top: 5px; }
 
-        /* Fullscreen modal */
         .modal {
             display: none;
             position: fixed;
@@ -280,7 +274,6 @@
         .modal-back { background: #27ae60; transform: rotateY(180deg); border: 4px solid white; }
         .modal-hint { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px; opacity: 0.7; }
         
-        /* Ovládací tlačítka pod modalem */
         .modal-controls {
             margin-top: 25px;
             display: flex;
@@ -307,7 +300,6 @@
         .btn-richtig { background: var(--accent-success); }
         .btn-falsch { background: var(--accent); }
         
-        /* Stav načítání */
         .loading-text { text-align: center; font-size: 18px; color: #666; font-style: italic; }
     </style>
 </head>
@@ -341,8 +333,7 @@
                 <label for="playerCount">3. Počet týmů (1 - 10):</label>
                 <input type="number" id="playerCount" min="1" max="10" value="3" onchange="generateTeamFields()">
                 
-                <div class="teams-config-list" id="teamsConfigList">
-                    </div>
+                <div class="teams-config-list" id="teamsConfigList"></div>
             </div>
 
             <button class="btn-start" onclick="startGame()">Spustit hru <i class="fas fa-play"></i></button>
@@ -350,12 +341,8 @@
     </div>
 
     <div class="game-area" id="gameArea">
-        <div class="turn-announcer" id="turnAnnouncer">
-            Na řadě je: Tým 1
-        </div>
-
+        <div class="turn-announcer" id="turnAnnouncer">Na řadě je: Tým 1</div>
         <div class="jeopardy-board" id="jeopardyBoard"></div>
-
         <h2>Bodování týmů</h2>
         <div class="teams-container" id="teamsContainer"></div>
     </div>
@@ -383,7 +370,6 @@
 </div>
 
 <script>
-    // URL na tvůj konkrétní GitHub surový JSON
     const jsonUrl = "https://raw.githubusercontent.com/hurpav/wortschatz/main/data/riskuj.json";
     
     let jeopardyData = {};
@@ -392,12 +378,10 @@
     let currentQuestionValue = 0;
     let activeCardElement = null;
     let isBuzzerMode = false;
-    let teamWhoBuzzed = null; // Pro režim Buzzer ANO
+    let teamWhoBuzzed = null;
 
-    // Seznam doporučených emoji pro učitele a žáky
     const emojiList = ["🦊", "🦁", "🐼", "🐸", "🐵", "🦄", "🦉", "🐧", "🦖", "🐝", "🍕", "⚽", "🚗", "🎸"];
 
-    // Načtení dat z GitHubu hned při startu
     window.onload = function() {
         fetch(jsonUrl)
             .then(response => {
@@ -435,7 +419,6 @@
         document.getElementById('buzzerNotice').style.display = isBuzzerMode ? 'block' : 'none';
     }
 
-    // Vygenerování inputů pro nastavení jmen a emoji týmů
     function generateTeamFields() {
         let count = parseInt(document.getElementById('playerCount').value) || 1;
         if(count < 1) count = 1;
@@ -449,7 +432,6 @@
             const row = document.createElement('div');
             row.className = 'team-config-row';
             
-            // Výběr emoji
             let emojiOptions = '';
             emojiList.forEach((em, idx) => {
                 emojiOptions += `<option value="${em}" ${idx === i ? 'selected' : ''}>${em}</option>`;
@@ -473,7 +455,6 @@
             return;
         }
 
-        // Sestavení struktury týmů
         let count = parseInt(document.getElementById('playerCount').value);
         teams = [];
         for(let i = 0; i < count; i++) {
@@ -499,7 +480,6 @@
         board.innerHTML = '';
         board.style.gridTemplateColumns = `repeat(${themes.length}, minmax(130px, 1fr))`;
 
-        // Hlavičky
         themes.forEach(theme => {
             const header = document.createElement('div');
             header.className = 'board-header';
@@ -507,11 +487,11 @@
             board.appendChild(header);
         });
 
-        // Hodnoty 100 - 500
         const values = [100, 200, 300, 400, 500];
         values.forEach(val => {
             themes.forEach(theme => {
-                const questionObj = jeopardyData[theme]?.find(q => q.value === val);
+                // OPRAVENO: Přetypování q.value na Number, aby fungovalo === porovnání
+                const questionObj = jeopardyData[theme]?.find(q => Number(q.value) === val);
                 const card = document.createElement('div');
                 card.className = 'question-card';
                 card.innerText = `${val} €`;
@@ -536,7 +516,6 @@
             card.className = 'team-card';
             card.id = `team-card-${team.id}`;
             
-            // Označení aktivního tahu v režimu "Buzzer NE"
             if (!isBuzzerMode && idx === currentTurnIndex) {
                 card.classList.add('active-turn');
             }
@@ -547,7 +526,6 @@
                 <div class="team-score" id="score-display-${team.id}">${team.score} €</div>
             `;
             
-            // V režimu Buzzer ANO kliknutím na kartu učitel simuluje, kdo bzučel první u stolu
             if (isBuzzerMode) {
                 card.style.cursor = "pointer";
                 card.title = "Kliknutím označíš, že tento tým bzučel jako první!";
@@ -555,8 +533,8 @@
             }
 
             container.appendChild(card);
-        }
-    });
+        });
+    }
 
     function updateTurnAnnouncer() {
         const announcer = document.getElementById('turnAnnouncer');
@@ -573,14 +551,12 @@
     }
 
     function setBuzzedTeam(teamId) {
-        if (!isBuzzerMode || currentQuestionValue === 0) return; // Pouze pokud je otevřená otázka
+        if (!isBuzzerMode || currentQuestionValue === 0) return;
         
         teamWhoBuzzed = teamId;
-        // Reset vizuálů bzučení
         teams.forEach(t => {
             document.getElementById(`team-card-${t.id}`).classList.remove('buzzed-first');
         });
-        // Zvýraznit toho, kdo bzučel
         document.getElementById(`team-card-${teamId}`).classList.add('buzzed-first');
         
         const announcer = document.getElementById('turnAnnouncer');
@@ -592,7 +568,7 @@
 
         currentQuestionValue = value;
         activeCardElement = cardEl;
-        teamWhoBuzzed = null; // Vyčistit bzučák pro novou otázku
+        teamWhoBuzzed = null;
 
         document.getElementById('modalQuestionText').innerText = qText;
         document.getElementById('modalAnswerText').innerText = aText;
@@ -601,7 +577,6 @@
 
         if (isBuzzerMode) {
             updateTurnAnnouncer();
-            // Vynutíme odebrání starých zvýraznění bzučení
             teams.forEach(t => document.getElementById(`team-card-${t.id}`).classList.remove('buzzed-first'));
         }
     }
@@ -610,9 +585,8 @@
         document.getElementById('modalContent').classList.toggle('flipped');
     }
 
-    // Tlačítka Richtig / Falsch
     function evaluateAnswer(isCorrect) {
-        let targetTeamIndex = currentTurnIndex; // Výchozí v offline variantě bez bzučáku
+        let targetTeamIndex = currentTurnIndex;
 
         if (isBuzzerMode) {
             if (teamWhoBuzzed === null) {
@@ -622,34 +596,28 @@
             targetTeamIndex = teams.findIndex(t => t.id === teamWhoBuzzed);
         }
 
-        // Přičtení/odečtení eur
         if (isCorrect) {
             teams[targetTeamIndex].score += currentQuestionValue;
         } else {
             teams[targetTeamIndex].score -= currentQuestionValue;
         }
 
-        // Aktualizace zobrazení bodů
         document.getElementById(`score-display-${teams[targetTeamIndex].id}`).innerText = `${teams[targetTeamIndex].score} €`;
 
-        // Uzavření modalu a zneaktivnění karty
         document.getElementById('questionModal').style.display = 'none';
         if (activeCardElement) {
             activeCardElement.classList.add('disabled');
             activeCardElement.onclick = null;
         }
 
-        // Posunout tah na dalšího hráče (pouze pokud bzučák není aktivní, u bzučáku si vybírají volně nebo dle dohody)
         if (!isBuzzerMode) {
             currentTurnIndex = (currentTurnIndex + 1) % teams.length;
         }
 
-        // Vyčištění stavu
         currentQuestionValue = 0;
         activeCardElement = null;
         teamWhoBuzzed = null;
 
-        // Překreslení aktivních stylů a lišty
         renderTeams();
         updateTurnAnnouncer();
     }
