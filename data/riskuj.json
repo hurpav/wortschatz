@@ -3,7 +3,7 @@
     {"value": 100, "question": "Jak se německy řekne 'hrát fotbal'?", "answer": "Fußball spielen"},
     {"value": 200, "question": "Přelož: Ich lese gern Bücher.", "answer": "Rád čtu knihy."},
     {"value": 300, "question": "Co znamená sloveso 'zeichnen'?", "answer": "Kreslit"},
-    {"value": 400, "question": "Jak se správně zeptáš na koníčky? (Jaké máš koníčky?)", "answer": "Was jsou deine Hobbys?"},
+    {"value": 400, "question": "Jak se správně zeptáš na koníčky? (Jaké máš koníčky?)", "answer": "Was sind deine Hobbys?"},
     {"value": 500, "question": "Doplň správné sloveso: Er ___ gern Fotos. (Fotografuje)", "answer": "macht (nebo fotografiert)"}
   ],
   "Berufe": [
@@ -17,7 +17,7 @@
     {"value": 100, "question": "Co znamená 'das Frühstück'?", "answer": "Snídaně"},
     {"value": 200, "question": "Jak se německy řekne 'zelenina'?", "answer": "das Gemüse"},
     {"value": 300, "question": "Přelož: Ich habe Hunger.", "answer": "Mám hlad."},
-    {"value": 400, "answer": "Sloveso 'essen' v jídle (ty jíš): Du ___", "answer": "isst"},
+    {"value": 400, "question": "Sloveso 'essen' v jídle (ty jíš): Du ___", "answer": "isst"},
     {"value": 500, "question": "Jak se řekne německy 'hlavní jídlo'?", "answer": "das Hauptgericht"}
   ],
   "Familie": [
@@ -34,4 +34,11 @@
     {"value": 400, "question": "Jaký je tvar slovesa 'sein' pro 'wir' (my jsme)?", "answer": "wir sind"},
     {"value": 500, "question": "Doplň správný tvar slovesa 'sprechen': ___ du Deutsch?", "answer": "Sprichst"}
   ],
-  "Trennbar+Verben
+  "Trennbar+Verben": [
+    {"value": 100, "question": "Kam se dává odlučitelná předpona v hlavní větě? (např. u slovesa aufstehen)", "answer": "Na úplný konec věty."},
+    {"value": 200, "question": "Přelož: Vstávám v 6 hodin. (aufstehen)", "answer": "Ich stehe um 6 Uhr auf."},
+    {"value": 300, "question": "Co znamená sloveso 'fernsehen'?", "answer": "Dívat se na televizi"},
+    {"value": 400, "question": "Doplň předponu: Wir kaufen im Supermarkt ___ . (Nakupujeme)", "answer": "ein (einkaufen)"},
+    {"value": 500, "question": "Přelož: Film začíná v 8. (anfangen)", "answer": "Der Film fängt um 8 Uhr an."}
+  ]
+}
