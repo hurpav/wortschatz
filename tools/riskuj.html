@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riskuj! - S integrací GitHubu a přípravou na Buzzer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f4f7f6;
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --accent-success: #2ecc71;
+            --card-bg: #34495e;
+            --text-light: #ffffff;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+        .back-link:hover { background: var(--primary); color: white; }
+
+        h1 { text-align: center; color: var(--primary); margin-top: 0; }
+
+        .setup-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .setup-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--primary); }
+
+        .theme-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .theme-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+        select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        /* Radio group pro Buzzer */
+        .buzzer-toggle {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .buzzer-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        /* Sekce konfigurace jmen týmů */
+        .teams-config-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .team-config-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .emoji-select {
+            width: 70px !important;
+            text-align: center;
+        }
+
+        .btn-start {
+            grid-column: 1 / -1;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        .btn-start:hover { background: #c0392b; }
+
+        /* Herní plocha */
+        .game-area { display: none; }
+        
+        /* Informační lišta tahu */
+        .turn-announcer {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border: 1px solid #bee5eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .jeopardy-board {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .board-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 8px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50px;
+        }
+
+        .question-card {
+            background: var(--card-bg);
+            color: var(--text-light);
+            aspect-ratio: 4/3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .question-card:hover { transform: scale(1.03); background: #2c3e50; }
+        .question-card.disabled { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; transform: none; }
+
+        /* Týmy spodní panel */
+        .teams-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        .team-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: #fafafa;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .team-card.active-turn {
+            border-color: #2980b9;
+            background: #eaf2f8;
+            box-shadow: 0 0 10px rgba(41, 128, 185, 0.3);
+        }
+        .team-card.buzzed-first {
+            border-color: #f39c12;
+            background: #fef5e7;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { box-shadow: 0 0 5px #f39c12; }
+            to { box-shadow: 0 0 20px #f39c12; }
+        }
+        .team-emoji { font-size: 32px; margin-bottom: 5px; }
+        .team-name { font-weight: bold; color: var(--primary); font-size: 18px; }
+        .team-score { font-size: 22px; font-weight: bold; color: var(--accent); margin-top: 5px; }
+
+        /* Fullscreen modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .modal-content {
+            width: 85%;
+            max-width: 750px;
+            height: 380px;
+            position: relative;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .modal-inner {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        .modal-content.flipped .modal-inner { transform: rotateY(180deg); }
+        .modal-face {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 30px;
+            color: white;
+        }
+        .modal-front { background: var(--card-bg); border: 4px solid var(--accent); }
+        .modal-back { background: #27ae60; transform: rotateY(180deg); border: 4px solid white; }
+        .modal-hint { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-top: 25px; opacity: 0.7; }
+        
+        /* Ovládací tlačítka pod modalem */
+        .modal-controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 20px;
+            width: 85%;
+            max-width: 750px;
+            justify-content: center;
+        }
+        .btn-decision {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            box-shadow: var(--shadow);
+            transition: transform 0.1s;
+        }
+        .btn-decision:active { transform: scale(0.95); }
+        .btn-richtig { background: var(--accent-success); }
+        .btn-falsch { background: var(--accent); }
+        
+        /* Stav načítání */
+        .loading-text { text-align: center; font-size: 18px; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="#" class="back-link"><i class="fas fa-home"></i> Zpět na Dashboard</a>
+    <h1><i class="fas fa-gamepad"></i> Riskuj! (Jeopardy)</h1>
+
+    <div class="setup-box" id="setupBox">
+        <div id="loadingMessage" class="loading-text">Načítám témata z GitHubu...</div>
+        
+        <div class="setup-grid" id="setupGrid" style="display: none;">
+            <div class="form-group">
+                <label>1. Vyber témata z GitHubu:</label>
+                <div class="theme-checkboxes" id="themeCheckboxes"></div>
+            </div>
+
+            <div class="form-group">
+                <label>2. Online Buzzer systém:</label>
+                <div class="buzzer-toggle">
+                    <label><input type="radio" name="buzzerOpt" value="NE" checked onchange="toggleBuzzerView()"> Buzzer "NE" (Pořadí týmů)</label>
+                    <label><input type="radio" name="buzzerOpt" value="ANO" onchange="toggleBuzzerView()"> Buzzer "ANO" (Nejrychlejší bere)</label>
+                </div>
+                <div id="buzzerNotice" style="font-size: 13px; color: #e67e22; margin-top: 5px; display: none;">
+                    <i class="fas fa-wifi"></i> Režim rychlého bzučení zapnut. (Hráči bzučí externě/u stolu nebo simulovaně).
+                </div>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="playerCount">3. Počet týmů (1 - 10):</label>
+                <input type="number" id="playerCount" min="1" max="10" value="3" onchange="generateTeamFields()">
+                
+                <div class="teams-config-list" id="teamsConfigList">
+                    </div>
+            </div>
+
+            <button class="btn-start" onclick="startGame()">Spustit hru <i class="fas fa-play"></i></button>
+        </div>
+    </div>
+
+    <div class="game-area" id="gameArea">
+        <div class="turn-announcer" id="turnAnnouncer">
+            Na řadě je: Tým 1
+        </div>
+
+        <div class="jeopardy-board" id="jeopardyBoard"></div>
+
+        <h2>Bodování týmů</h2>
+        <div class="teams-container" id="teamsContainer"></div>
+    </div>
+</div>
+
+<div class="modal" id="questionModal">
+    <div class="modal-content" id="modalContent" onclick="flipCard()">
+        <div class="modal-inner">
+            <div class="modal-face modal-front">
+                <div id="modalQuestionText">Otázka</div>
+                <div class="modal-hint">Klikni pro otočení a zobrazení odpovědi</div>
+            </div>
+            <div class="modal-face modal-back">
+                <div style="font-size: 16px; margin-bottom: 10px; opacity: 0.8; text-transform: uppercase;">Správná odpověď:</div>
+                <div id="modalAnswerText">Odpověď</div>
+                <div class="modal-hint">Kliknutím otočíš zpět</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-controls">
+        <button class="btn-decision btn-falsch" onclick="evaluateAnswer(false)"><i class="fas fa-times"></i> Falsch (Špatně)</button>
+        <button class="btn-decision btn-richtig" onclick="evaluateAnswer(true)"><i class="fas fa-check"></i> Richtig (Správně)</button>
+    </div>
+</div>
+
+<script>
+    // URL na tvůj konkrétní GitHub surový JSON
+    const jsonUrl = "https://raw.githubusercontent.com/hurpar/wortschatz/main/data/riskuj.json";
+    
+    let jeopardyData = {};
+    let teams = [];
+    let currentTurnIndex = 0;
+    let currentQuestionValue = 0;
+    let activeCardElement = null;
+    let isBuzzerMode = false;
+    let teamWhoBuzzed = null; // Pro režim Buzzer ANO
+
+    // Seznam doporučených emoji pro učitele a žáky
+    const emojiList = ["🦊", "🦁", "🐼", "🐸", "🐵", "🦄", "🦉", "🐧", "🦖", "🐝", "🍕", "⚽", "🚗", "🎸"];
+
+    // Načtení dat z GitHubu hned při startu
+    window.onload = function() {
+        fetch(jsonUrl)
+            .then(response => {
+                if (!response.ok) throw new Error("Chyba při stahování JSONu z GitHubu.");
+                return response.json();
+            })
+            .then(data => {
+                jeopardyData = data;
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('setupGrid').style.display = 'grid';
+                initThemeCheckboxes();
+                generateTeamFields();
+            })
+            .catch(error => {
+                console.error(error);
+                document.getElementById('loadingMessage').innerHTML = 
+                    `<span style="color:red;"><i class="fas fa-exclamation-triangle"></i> Nepodařilo se načíst data z GitHubu.<br>Ujisti se, že soubor existuje na adrese: <br><small>${jsonUrl}</small></span>`;
+            });
+    };
+
+    function initThemeCheckboxes() {
+        const container = document.getElementById('themeCheckboxes');
+        container.innerHTML = '';
+        Object.keys(jeopardyData).forEach(theme => {
+            const label = document.createElement('label');
+            label.className = 'theme-item';
+            label.innerHTML = `<input type="checkbox" value="${theme}" checked> ${theme}`;
+            container.appendChild(label);
+        });
+    }
+
+    function toggleBuzzerView() {
+        const val = document.querySelector('input[name="buzzerOpt"]:checked').value;
+        isBuzzerMode = (val === "ANO");
+        document.getElementById('buzzerNotice').style.display = isBuzzerMode ? 'block' : 'none';
+    }
+
+    // Vygenerování inputů pro nastavení jmen a emoji týmů
+    function generateTeamFields() {
+        let count = parseInt(document.getElementById('playerCount').value) || 1;
+        if(count < 1) count = 1;
+        if(count > 10) count = 10;
+        document.getElementById('playerCount').value = count;
+
+        const listContainer = document.getElementById('teamsConfigList');
+        listContainer.innerHTML = '';
+
+        for(let i = 0; i < count; i++) {
+            const row = document.createElement('div');
+            row.className = 'team-config-row';
+            
+            // Výběr emoji
+            let emojiOptions = '';
+            emojiList.forEach((em, idx) => {
+                emojiOptions += `<option value="${em}" ${idx === i ? 'selected' : ''}>${em}</option>`;
+            });
+
+            row.innerHTML = `
+                <span style="font-weight:bold; min-width:60px;">Tým ${i+1}:</span>
+                <select class="emoji-select" id="cfg-emoji-${i}">${emojiOptions}</select>
+                <input type="text" id="cfg-name-${i}" value="Tým ${i+1}" placeholder="Název týmu">
+            `;
+            listContainer.appendChild(row);
+        }
+    }
+
+    function startGame() {
+        const checkedBoxes = document.querySelectorAll('#themeCheckboxes input:checked');
+        const selectedThemes = Array.from(checkedBoxes).map(cb => cb.value);
+
+        if(selectedThemes.length === 0) {
+            alert('Vyber prosím alespoň jedno téma z nabídky!');
+            return;
+        }
+
+        // Sestavení struktury týmů
+        let count = parseInt(document.getElementById('playerCount').value);
+        teams = [];
+        for(let i = 0; i < count; i++) {
+            teams.push({
+                id: i,
+                name: document.getElementById(`cfg-name-${i}`).value || `Tým ${i+1}`,
+                emoji: document.getElementById(`cfg-emoji-${i}`).value,
+                score: 0
+            });
+        }
+
+        document.getElementById('setupBox').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+
+        currentTurnIndex = 0;
+        updateTurnAnnouncer();
+        buildBoard(selectedThemes);
+        renderTeams();
+    }
+
+    function buildBoard(themes) {
+        const board = document.getElementById('jeopardyBoard');
+        board.innerHTML = '';
+        board.style.gridTemplateColumns = `repeat(${themes.length}, minmax(130px, 1fr))`;
+
+        // Hlavičky
+        themes.forEach(theme => {
+            const header = document.createElement('div');
+            header.className = 'board-header';
+            header.innerText = theme;
+            board.appendChild(header);
+        });
+
+        // Hodnoty 100 - 500
+        const values = [100, 200, 300, 400, 500];
+        values.forEach(val => {
+            themes.forEach(theme => {
+                const questionObj = jeopardyData[theme]?.find(q => q.value === val);
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                card.innerText = `${val} €`;
+                
+                if (questionObj) {
+                    card.onclick = () => openQuestion(questionObj.question, questionObj.answer, val, card);
+                } else {
+                    card.className = 'question-card disabled';
+                    card.innerText = '-';
+                }
+                board.appendChild(card);
+            });
+        });
+    }
+
+    function renderTeams() {
+        const container = document.getElementById('teamsContainer');
+        container.innerHTML = '';
+
+        teams.forEach((team, idx) => {
+            const card = document.createElement('div');
+            card.className = 'team-card';
+            card.id = `team-card-${team.id}`;
+            
+            // Označení aktivního tahu v režimu "Buzzer NE"
+            if (!isBuzzerMode && idx === currentTurnIndex) {
+                card.classList.add('active-turn');
+            }
+
+            card.innerHTML = `
+                <div class="team-emoji">${team.emoji}</div>
+                <div class="team-name">${team.name}</div>
+                <div class="team-score" id="score-display-${team.id}">${team.score} €</div>
+            `;
+            
+            // V režimu Buzzer ANO kliknutím na kartu učitel simuluje, kdo bzučel první u stolu
+            if (isBuzzerMode) {
+                card.style.cursor = "pointer";
+                card.title = "Kliknutím označíš, že tento tým bzučel jako první!";
+                card.onclick = () => setBuzzedTeam(team.id);
+            }
+
+            container.appendChild(card);
+        }
+    });
+
+    function updateTurnAnnouncer() {
+        const announcer = document.getElementById('turnAnnouncer');
+        if (isBuzzerMode) {
+            announcer.innerHTML = `<i class="fas fa-bullhorn" style="color:#e67e22;"></i> Režim bzučáku: Kdo bzučel první? (Klikni na jeho kartu níže)`;
+            announcer.style.background = "#fff3cd";
+            announcer.style.color = "#856404";
+        } else {
+            const activeTeam = teams[currentTurnIndex];
+            announcer.innerHTML = `<i class="fas fa-arrow-right"></i> Na řadě pro výběr otázky: <strong>${activeTeam.emoji} ${activeTeam.name}</strong>`;
+            announcer.style.background = "#d1ecf1";
+            announcer.style.color = "#0c5460";
+        }
+    }
+
+    function setBuzzedTeam(teamId) {
+        if (!isBuzzerMode || currentQuestionValue === 0) return; // Pouze pokud je otevřená otázka
+        
+        teamWhoBuzzed = teamId;
+        // Reset vizuálů bzučení
+        teams.forEach(t => {
+            document.getElementById(`team-card-${t.id}`).classList.remove('buzzed-first');
+        });
+        // Zvýraznit toho, kdo bzučel
+        document.getElementById(`team-card-${teamId}`).classList.add('buzzed-first');
+        
+        const announcer = document.getElementById('turnAnnouncer');
+        announcer.innerHTML = `<i class="fas fa-bolt" style="color:#f39c12;"></i> Odpovídá nejrychlejší: <strong>${teams[teamId].emoji} ${teams[teamId].name}</strong>`;
+    }
+
+    function openQuestion(qText, aText, value, cardEl) {
+        if (cardEl.classList.contains('disabled')) return;
+
+        currentQuestionValue = value;
+        activeCardElement = cardEl;
+        teamWhoBuzzed = null; // Vyčistit bzučák pro novou otázku
+
+        document.getElementById('modalQuestionText').innerText = qText;
+        document.getElementById('modalAnswerText').innerText = aText;
+        document.getElementById('modalContent').classList.remove('flipped');
+        document.getElementById('questionModal').style.display = 'flex';
+
+        if (isBuzzerMode) {
+            updateTurnAnnouncer();
+            // Vynutíme odebrání starých zvýraznění bzučení
+            teams.forEach(t => document.getElementById(`team-card-${t.id}`).classList.remove('buzzed-first'));
+        }
+    }
+
+    function flipCard() {
+        document.getElementById('modalContent').classList.toggle('flipped');
+    }
+
+    // Tlačítka Richtig / Falsch
+    function evaluateAnswer(isCorrect) {
+        let targetTeamIndex = currentTurnIndex; // Výchozí v offline variantě bez bzučáku
+
+        if (isBuzzerMode) {
+            if (teamWhoBuzzed === null) {
+                alert("V režimu bzučáku musíte nejprve kliknutím na kartu týmu dole vybrat, kdo zabzučel!");
+                return;
+            }
+            targetTeamIndex = teams.findIndex(t => t.id === teamWhoBuzzed);
+        }
+
+        // Přičtení/odečtení eur
+        if (isCorrect) {
+            teams[targetTeamIndex].score += currentQuestionValue;
+        } else {
+            teams[targetTeamIndex].score -= currentQuestionValue;
+        }
+
+        // Aktualizace zobrazení bodů
+        document.getElementById(`score-display-${teams[targetTeamIndex].id}`).innerText = `${teams[targetTeamIndex].score} €`;
+
+        // Uzavření modalu a zneaktivnění karty
+        document.getElementById('questionModal').style.display = 'none';
+        if (activeCardElement) {
+            activeCardElement.classList.add('disabled');
+            activeCardElement.onclick = null;
+        }
+
+        // Posunout tah na dalšího hráče (pouze pokud bzučák není aktivní, u bzučáku si vybírají volně nebo dle dohody)
+        if (!isBuzzerMode) {
+            currentTurnIndex = (currentTurnIndex + 1) % teams.length;
+        }
+
+        // Vyčištění stavu
+        currentQuestionValue = 0;
+        activeCardElement = null;
+        teamWhoBuzzed = null;
+
+        // Překreslení aktivních stylů a lišty
+        renderTeams();
+        updateTurnAnnouncer();
+    }
+</script>
+
+</body>
+</html>
