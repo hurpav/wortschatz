@@ -1,1 +1,37 @@
-pokus
+{
+  "Hobbys": [
+    {"value": 100, "question": "Jak se německy řekne 'hrát fotbal'?", "answer": "Fußball spielen"},
+    {"value": 200, "question": "Přelož: Ich lese gern Bücher.", "answer": "Rád čtu knihy."},
+    {"value": 300, "question": "Co znamená sloveso 'zeichnen'?", "answer": "Kreslit"},
+    {"value": 400, "question": "Jak se správně zeptáš na koníčky? (Jaké máš koníčky?)", "answer": "Was jsou deine Hobbys?"},
+    {"value": 500, "question": "Doplň správné sloveso: Er ___ gern Fotos. (Fotografuje)", "answer": "macht (nebo fotografiert)"}
+  ],
+  "Berufe": [
+    {"value": 100, "question": "Jak se německy řekne 'učitel' a 'učitelka'?", "answer": "der Lehrer / die Lehrerin"},
+    {"value": 200, "question": "Kdo je to 'der Arzt'?", "answer": "Lékař / doktor"},
+    {"value": 300, "question": "Přelož: Moje matka pracuje jako programátorka.", "answer": "Meine Mutter arbeitet als Programmiererin."},
+    {"value": 400, "question": "Jak se německy řekne povolání 'kuchař'?", "answer": "der Koch"},
+    {"value": 500, "question": "Přelož otázku: 'Co jsi z povolání?'", "answer": "Was bist du von Beruf? / Was sind Sie von Beruf?"}
+  ],
+  "Essen": [
+    {"value": 100, "question": "Co znamená 'das Frühstück'?", "answer": "Snídaně"},
+    {"value": 200, "question": "Jak se německy řekne 'zelenina'?", "answer": "das Gemüse"},
+    {"value": 300, "question": "Přelož: Ich habe Hunger.", "answer": "Mám hlad."},
+    {"value": 400, "answer": "Sloveso 'essen' v jídle (ty jíš): Du ___", "answer": "isst"},
+    {"value": 500, "question": "Jak se řekne německy 'hlavní jídlo'?", "answer": "das Hauptgericht"}
+  ],
+  "Familie": [
+    {"value": 100, "question": "Kdo je 'der Bruder'?", "answer": "Bratr"},
+    {"value": 200, "question": "Jak se německy řeknou 'rodiče'?", "answer": "die Eltern"},
+    {"value": 300, "question": "Jak se řekne 'moje babička'?", "answer": "meine Oma / meine Großmutter"},
+    {"value": 400, "question": "Co znamená výraz 'die Geschwister'?", "answer": "Sourozenci"},
+    {"value": 500, "question": "Přelož: Mám jednoho bratrance.", "answer": "Ich habe einen Cousin."}
+  ],
+  "Verbkonjugation": [
+    {"value": 100, "question": "Vyčasuj sloveso 'wohnen' pro 'er' (on bydlí).", "answer": "er wohnt"},
+    {"value": 200, "question": "Jaký je správný tvar slovesa 'haben' pro 'ihr' (vy máte)?", "answer": "ihr habt"},
+    {"value": 300, "question": "Vyčasuj nepravidelné sloveso 'fahren' pro 'du' (ty jedeš).", "answer": "du fährst"},
+    {"value": 400, "question": "Jaký je tvar slovesa 'sein' pro 'wir' (my jsme)?", "answer": "wir sind"},
+    {"value": 500, "question": "Doplň správný tvar slovesa 'sprechen': ___ du Deutsch?", "answer": "Sprichst"}
+  ],
+  "Trennbar+Verben
