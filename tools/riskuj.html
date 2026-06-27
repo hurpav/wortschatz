@@ -29,40 +29,21 @@
             margin: 0 auto;
         }
 
-        .top-nav {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .back-link, .settings-link {
+        .back-link {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             color: var(--primary);
             text-decoration: none;
             font-weight: 600;
+            margin-bottom: 20px;
             padding: 8px 16px;
             background: white;
             border-radius: 8px;
             box-shadow: var(--shadow);
             transition: all 0.2s ease;
-            cursor: pointer;
-            border: none;
-            font-size: 14px;
         }
-        .back-link:hover, .settings-link:hover { 
-            background: var(--primary); 
-            color: white; 
-        }
-        
-        .settings-link {
-            background: #7f8c8d;
-            color: white;
-        }
-        .settings-link:hover {
-            background: #95a5a6;
-        }
+        .back-link:hover { background: var(--primary); color: white; }
 
         h1 { text-align: center; color: var(--primary); margin-top: 0; }
 
@@ -325,13 +306,7 @@
 <body>
 
 <div class="container">
-    <div class="top-nav">
-        <!-- Zpět na Dashboard (nasměrováno na index.html) -->
-        <a href="index.html" class="back-link"><i class="fas fa-home"></i> Zpět na Dashboard</a>
-        <!-- Tlačítko zpět na nastavení (viditelné jen při zapnuté hře) -->
-        <button id="btnSettings" class="settings-link" style="display: none;" onclick="resetToSettings()"><i class="fas fa-cog"></i> Zpět na nastavení</button>
-    </div>
-
+    <a href="#" class="back-link"><i class="fas fa-home"></i> Zpět na Dashboard</a>
     <h1><i class="fas fa-gamepad"></i> Riskuj! (Jeopardy)</h1>
 
     <div class="setup-box" id="setupBox">
@@ -493,19 +468,11 @@
 
         document.getElementById('setupBox').style.display = 'none';
         document.getElementById('gameArea').style.display = 'block';
-        document.getElementById('btnSettings').style.display = 'inline-flex'; // Zobrazit tlačítko Nastavení
 
         currentTurnIndex = 0;
         updateTurnAnnouncer();
         buildBoard(selectedThemes);
         renderTeams();
-    }
-
-    // Funkce pro okamžitý návrat do úvodního menu
-    function resetToSettings() {
-        document.getElementById('gameArea').style.display = 'none';
-        document.getElementById('btnSettings').style.display = 'none';
-        document.getElementById('setupBox').style.display = 'block';
     }
 
     function buildBoard(themes) {
@@ -523,8 +490,8 @@
         const values = [100, 200, 300, 400, 500];
         values.forEach(val => {
             themes.forEach(theme => {
-                const questionList = jeopardyData[theme] || [];
-                const questionObj = questionList.find(q => Number(q.value) === val);
+                // OPRAVENO: Přetypování q.value na Number, aby fungovalo === porovnání
+                const questionObj = jeopardyData[theme]?.find(q => Number(q.value) === val);
                 const card = document.createElement('div');
                 card.className = 'question-card';
                 card.innerText = `${val} €`;
