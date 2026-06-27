@@ -370,257 +370,63 @@
 </div>
 
 <script>
-    const jsonUrl = "https://raw.githubusercontent.com/hurpav/wortschatz/main/data/riskuj.json";
-    
-    let jeopardyData = {};
-    let teams = [];
-    let currentTurnIndex = 0;
-    let currentQuestionValue = 0;
-    let activeCardElement = null;
-    let isBuzzerMode = false;
-    let teamWhoBuzzed = null;
+  // 1. Správné načtení čistého JSON objektu
+fetch(jsonUrl)
+  .then(response => {
+    if (!response.ok) throw new Error("Nepodařilo se načíst JSON z GitHubu");
+    return response.json();
+  })
+  .then(data => {
+    // Tvůj JSON jsou přímo ta témata, přiřadíme je rovnou!
+    allQuestions = data; 
+    buildBoard();
+  })
+  .catch(error => {
+    console.error("Chyba při načítání hry:", error);
+    alert("Chyba při načítání dat: " + error.message);
+  });
 
-    const emojiList = ["🦊", "🦁", "🐼", "🐸", "🐵", "🦄", "🦉", "🐧", "🦖", "🐝", "🍕", "⚽", "🚗", "🎸"];
+// 2. Jistota ve funkci buildBoard
+function buildBoard() {
+  const board = document.getElementById("jeopardy-board");
+  board.innerHTML = ""; // Vyčistit plochu
 
-    window.onload = function() {
-        fetch(jsonUrl)
-            .then(response => {
-                if (!response.ok) throw new Error("Chyba při stahování JSONu z GitHubu.");
-                return response.json();
-            })
-            .then(data => {
-                jeopardyData = data;
-                document.getElementById('loadingMessage').style.display = 'none';
-                document.getElementById('setupGrid').style.display = 'grid';
-                initThemeCheckboxes();
-                generateTeamFields();
-            })
-            .catch(error => {
-                console.error(error);
-                document.getElementById('loadingMessage').innerHTML = 
-                    `<span style="color:red;"><i class="fas fa-exclamation-triangle"></i> Nepodařilo se načíst data z GitHubu.<br>Ujisti se, že soubor existuje na adrese: <br><small>${jsonUrl}</small></span>`;
-            });
-    };
+  // Definujeme body 100 až 500
+  const values = [100, 200, 300, 400, 500];
+  // Získáme názvy témat přímo z klíčů objektu (Hobbys, Berufe, atd.)
+  const categories = Object.keys(allQuestions);
 
-    function initThemeCheckboxes() {
-        const container = document.getElementById('themeCheckboxes');
-        container.innerHTML = '';
-        Object.keys(jeopardyData).forEach(theme => {
-            const label = document.createElement('label');
-            label.className = 'theme-item';
-            label.innerHTML = `<input type="checkbox" value="${theme}" checked> ${theme}`;
-            container.appendChild(label);
-        });
-    }
+  // Vytvoření záhlaví tabulky s názvy témat
+  categories.forEach(cat => {
+    const headerCell = document.createElement("div");
+    headerCell.className = "header-cell";
+    headerCell.innerText = cat;
+    board.appendChild(headerCell);
+  });
 
-    function toggleBuzzerView() {
-        const val = document.querySelector('input[name="buzzerOpt"]:checked').value;
-        isBuzzerMode = (val === "ANO");
-        document.getElementById('buzzerNotice').style.display = isBuzzerMode ? 'block' : 'none';
-    }
+  // Vytvoření hracích políček po řádcích (podle hodnot bodů)
+  values.forEach(val => {
+    categories.forEach(cat => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.innerText = val;
 
-    function generateTeamFields() {
-        let count = parseInt(document.getElementById('playerCount').value) || 1;
-        if(count < 1) count = 1;
-        if(count > 10) count = 10;
-        document.getElementById('playerCount').value = count;
+      // Najdeme konkrétní otázku pro dané téma a body
+      const questionList = allQuestions[cat] || [];
+      const q = questionList.find(item => Number(item.value) === val);
 
-        const listContainer = document.getElementById('teamsConfigList');
-        listContainer.innerHTML = '';
+      if (q) {
+        cell.onclick = () => showQuestion(q, cell);
+      } else {
+        // Pokud otázka pro dané body chybí, políčko deaktivujeme
+        cell.classList.add("disabled");
+        cell.innerText = "-";
+      }
 
-        for(let i = 0; i < count; i++) {
-            const row = document.createElement('div');
-            row.className = 'team-config-row';
-            
-            let emojiOptions = '';
-            emojiList.forEach((em, idx) => {
-                emojiOptions += `<option value="${em}" ${idx === i ? 'selected' : ''}>${em}</option>`;
-            });
-
-            row.innerHTML = `
-                <span style="font-weight:bold; min-width:60px;">Tým ${i+1}:</span>
-                <select class="emoji-select" id="cfg-emoji-${i}">${emojiOptions}</select>
-                <input type="text" id="cfg-name-${i}" value="Tým ${i+1}" placeholder="Název týmu">
-            `;
-            listContainer.appendChild(row);
-        }
-    }
-
-    function startGame() {
-        const checkedBoxes = document.querySelectorAll('#themeCheckboxes input:checked');
-        const selectedThemes = Array.from(checkedBoxes).map(cb => cb.value);
-
-        if(selectedThemes.length === 0) {
-            alert('Vyber prosím alespoň jedno téma z nabídky!');
-            return;
-        }
-
-        let count = parseInt(document.getElementById('playerCount').value);
-        teams = [];
-        for(let i = 0; i < count; i++) {
-            teams.push({
-                id: i,
-                name: document.getElementById(`cfg-name-${i}`).value || `Tým ${i+1}`,
-                emoji: document.getElementById(`cfg-emoji-${i}`).value,
-                score: 0
-            });
-        }
-
-        document.getElementById('setupBox').style.display = 'none';
-        document.getElementById('gameArea').style.display = 'block';
-
-        currentTurnIndex = 0;
-        updateTurnAnnouncer();
-        buildBoard(selectedThemes);
-        renderTeams();
-    }
-
-    function buildBoard(themes) {
-        const board = document.getElementById('jeopardyBoard');
-        board.innerHTML = '';
-        board.style.gridTemplateColumns = `repeat(${themes.length}, minmax(130px, 1fr))`;
-
-        themes.forEach(theme => {
-            const header = document.createElement('div');
-            header.className = 'board-header';
-            header.innerText = theme;
-            board.appendChild(header);
-        });
-
-        const values = [100, 200, 300, 400, 500];
-        values.forEach(val => {
-            themes.forEach(theme => {
-                // OPRAVENO: Přetypování q.value na Number, aby fungovalo === porovnání
-                const questionObj = jeopardyData[theme]?.find(q => Number(q.value) === val);
-                const card = document.createElement('div');
-                card.className = 'question-card';
-                card.innerText = `${val} €`;
-                
-                if (questionObj) {
-                    card.onclick = () => openQuestion(questionObj.question, questionObj.answer, val, card);
-                } else {
-                    card.className = 'question-card disabled';
-                    card.innerText = '-';
-                }
-                board.appendChild(card);
-            });
-        });
-    }
-
-    function renderTeams() {
-        const container = document.getElementById('teamsContainer');
-        container.innerHTML = '';
-
-        teams.forEach((team, idx) => {
-            const card = document.createElement('div');
-            card.className = 'team-card';
-            card.id = `team-card-${team.id}`;
-            
-            if (!isBuzzerMode && idx === currentTurnIndex) {
-                card.classList.add('active-turn');
-            }
-
-            card.innerHTML = `
-                <div class="team-emoji">${team.emoji}</div>
-                <div class="team-name">${team.name}</div>
-                <div class="team-score" id="score-display-${team.id}">${team.score} €</div>
-            `;
-            
-            if (isBuzzerMode) {
-                card.style.cursor = "pointer";
-                card.title = "Kliknutím označíš, že tento tým bzučel jako první!";
-                card.onclick = () => setBuzzedTeam(team.id);
-            }
-
-            container.appendChild(card);
-        });
-    }
-
-    function updateTurnAnnouncer() {
-        const announcer = document.getElementById('turnAnnouncer');
-        if (isBuzzerMode) {
-            announcer.innerHTML = `<i class="fas fa-bullhorn" style="color:#e67e22;"></i> Režim bzučáku: Kdo bzučel první? (Klikni na jeho kartu níže)`;
-            announcer.style.background = "#fff3cd";
-            announcer.style.color = "#856404";
-        } else {
-            const activeTeam = teams[currentTurnIndex];
-            announcer.innerHTML = `<i class="fas fa-arrow-right"></i> Na řadě pro výběr otázky: <strong>${activeTeam.emoji} ${activeTeam.name}</strong>`;
-            announcer.style.background = "#d1ecf1";
-            announcer.style.color = "#0c5460";
-        }
-    }
-
-    function setBuzzedTeam(teamId) {
-        if (!isBuzzerMode || currentQuestionValue === 0) return;
-        
-        teamWhoBuzzed = teamId;
-        teams.forEach(t => {
-            document.getElementById(`team-card-${t.id}`).classList.remove('buzzed-first');
-        });
-        document.getElementById(`team-card-${teamId}`).classList.add('buzzed-first');
-        
-        const announcer = document.getElementById('turnAnnouncer');
-        announcer.innerHTML = `<i class="fas fa-bolt" style="color:#f39c12;"></i> Odpovídá nejrychlejší: <strong>${teams[teamId].emoji} ${teams[teamId].name}</strong>`;
-    }
-
-    function openQuestion(qText, aText, value, cardEl) {
-        if (cardEl.classList.contains('disabled')) return;
-
-        currentQuestionValue = value;
-        activeCardElement = cardEl;
-        teamWhoBuzzed = null;
-
-        document.getElementById('modalQuestionText').innerText = qText;
-        document.getElementById('modalAnswerText').innerText = aText;
-        document.getElementById('modalContent').classList.remove('flipped');
-        document.getElementById('questionModal').style.display = 'flex';
-
-        if (isBuzzerMode) {
-            updateTurnAnnouncer();
-            teams.forEach(t => document.getElementById(`team-card-${t.id}`).classList.remove('buzzed-first'));
-        }
-    }
-
-    function flipCard() {
-        document.getElementById('modalContent').classList.toggle('flipped');
-    }
-
-    function evaluateAnswer(isCorrect) {
-        let targetTeamIndex = currentTurnIndex;
-
-        if (isBuzzerMode) {
-            if (teamWhoBuzzed === null) {
-                alert("V režimu bzučáku musíte nejprve kliknutím na kartu týmu dole vybrat, kdo zabzučel!");
-                return;
-            }
-            targetTeamIndex = teams.findIndex(t => t.id === teamWhoBuzzed);
-        }
-
-        if (isCorrect) {
-            teams[targetTeamIndex].score += currentQuestionValue;
-        } else {
-            teams[targetTeamIndex].score -= currentQuestionValue;
-        }
-
-        document.getElementById(`score-display-${teams[targetTeamIndex].id}`).innerText = `${teams[targetTeamIndex].score} €`;
-
-        document.getElementById('questionModal').style.display = 'none';
-        if (activeCardElement) {
-            activeCardElement.classList.add('disabled');
-            activeCardElement.onclick = null;
-        }
-
-        if (!isBuzzerMode) {
-            currentTurnIndex = (currentTurnIndex + 1) % teams.length;
-        }
-
-        currentQuestionValue = 0;
-        activeCardElement = null;
-        teamWhoBuzzed = null;
-
-        renderTeams();
-        updateTurnAnnouncer();
-    }
+      board.appendChild(cell);
+    });
+  });
+}
 </script>
 
 </body>
