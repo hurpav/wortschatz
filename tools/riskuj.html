@@ -193,7 +193,10 @@
         .question-card:hover { transform: scale(1.03); background: #2c3e50; }
         .question-card.disabled { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; transform: none; }
 
+        /* OPRAVENO: Přidáno navýšení vrstvy, aby container s týmy vylezl NAD černé pozadí otázky */
         .teams-container {
+            position: relative;
+            z-index: 1100;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 15px;
@@ -490,7 +493,6 @@
         const values = [100, 200, 300, 400, 500];
         values.forEach(val => {
             themes.forEach(theme => {
-                // OPRAVENO: Přetypování q.value na Number, aby fungovalo === porovnání
                 const questionObj = jeopardyData[theme]?.find(q => Number(q.value) === val);
                 const card = document.createElement('div');
                 card.className = 'question-card';
@@ -526,6 +528,7 @@
                 <div class="team-score" id="score-display-${team.id}">${team.score} €</div>
             `;
             
+            // OPRAVENO: Karty jsou nyní pro bzučák aktivní a klikatelné vždy, když se hraje v režimu bzučáku
             if (isBuzzerMode) {
                 card.style.cursor = "pointer";
                 card.title = "Kliknutím označíš, že tento tým bzučel jako první!";
