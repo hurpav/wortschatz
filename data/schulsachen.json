@@ -6,6 +6,8 @@
       "de": "Rucksack",
       "cz": "batoh",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/rucksack.png",
       "blooket": {
         "question": "Co znamená 'der Rucksack'?",
@@ -20,6 +22,8 @@
       "de": "Mäppchen",
       "cz": "penál",
       "slovni_druh": "substantivum",
+      "color": "#2a9d8f",
+      "color_name": "green",
       "image": "images/schulsachen/mäppchen.png",
       "blooket": {
         "question": "Jak se německy řekne 'penál'?",
@@ -34,6 +38,8 @@
       "de": "Heft",
       "cz": "sešit",
       "slovni_druh": "substantivum",
+      "color": "#2a9d8f",
+      "color_name": "green",
       "image": "images/schulsachen/heft.png",
       "blooket": {
         "question": "Přelož: das Heft",
@@ -48,6 +54,8 @@
       "de": "Lehrbuch",
       "cz": "učebnice",
       "slovni_druh": "substantivum",
+      "color": "#2a9d8f",
+      "color_name": "green",
       "image": "images/schulsachen/lehrbuch.png",
       "blooket": {
         "question": "Co znamená 'das Lehrbuch'?",
@@ -62,6 +70,8 @@
       "de": "Textmarker",
       "cz": "zvýrazňovač",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/textmarker.png",
       "blooket": {
         "question": "Jak se německy řekne 'zvýrazňovač'?",
@@ -76,6 +86,8 @@
       "de": "Radiergummi",
       "cz": "guma",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/radiergummi.png",
       "blooket": {
         "question": "Přelož: der Radiergummi",
@@ -90,6 +102,8 @@
       "de": "Spitzer",
       "cz": "ořezávátko",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/spitzer.png",
       "blooket": {
         "question": "Co znamená 'der Spitzer'?",
@@ -104,6 +118,8 @@
       "de": "Lineal",
       "cz": "pravítko",
       "slovni_druh": "substantivum",
+      "color": "#2a9d8f",
+      "color_name": "green",
       "image": "images/schulsachen/lineal.png",
       "blooket": {
         "question": "Jak se německy řekne 'pravítko'?",
@@ -118,6 +134,8 @@
       "de": "Kleber",
       "cz": "lepidlo",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/kleber.png",
       "blooket": {
         "question": "Přelož: der Kleber",
@@ -132,6 +150,8 @@
       "de": "Schere",
       "cz": "nůžky",
       "slovni_druh": "substantivum",
+      "color": "#e63946",
+      "color_name": "red",
       "image": "images/schulsachen/schere.png",
       "blooket": {
         "question": "Co znamená 'die Schere'?",
@@ -146,6 +166,8 @@
       "de": "Buntstift",
       "cz": "pastelka",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/buntstift.png",
       "blooket": {
         "question": "Jak se německy řekne 'pastelka'?",
@@ -160,6 +182,8 @@
       "de": "Bleistift",
       "cz": "tužka",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/bleistift.png",
       "blooket": {
         "question": "Přelož: der Bleistift",
@@ -174,6 +198,8 @@
       "de": "Ordner",
       "cz": "pořadač / šanon",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/ordner.png",
       "blooket": {
         "question": "Co znamená 'der Ordner'?",
@@ -188,6 +214,8 @@
       "de": "Taschenrechner",
       "cz": "kalkulačka",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/taschenrechner.png",
       "blooket": {
         "question": "Jak se německy řekne 'kalkulačka'?",
@@ -202,6 +230,8 @@
       "de": "Zirkel",
       "cz": "kružítko",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/zirkel.png",
       "blooket": {
         "question": "Přelož: der Zirkel",
@@ -216,6 +246,8 @@
       "de": "Pinsel",
       "cz": "štětec",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/pinsel.png",
       "blooket": {
         "question": "Co znamená 'der Pinsel'?",
@@ -230,6 +262,8 @@
       "de": "Malkasten",
       "cz": "vodové barvy / paleta",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/malkasten.png",
       "blooket": {
         "question": "Jak se řekne německy 'vodové barvy'?",
@@ -244,6 +278,8 @@
       "de": "Notizblock",
       "cz": "blok / zápisník",
       "slovni_druh": "substantivum",
+      "color": "#1e90ff",
+      "color_name": "blue",
       "image": "images/schulsachen/notizblock.png",
       "blooket": {
         "question": "Přelož: der Notizblock",
