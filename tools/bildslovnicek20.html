@@ -343,7 +343,7 @@
 <script>
     let allFetchedItems = []; 
     let activeItems = [];     
-    let activeImages = [];    
+    let activeImages = [];   
 
     document.addEventListener("DOMContentLoaded", function() {
         loadTheme();
@@ -410,19 +410,21 @@
         }
     }
 
-    // Pomocná funkce pro parsování člene a slova z libovolné struktury
+    // OPRAVENÁ pomocná funkce pro správné vytažení člene a podstatného jména
     function parseWordData(item) {
         let fullDe = item.de || item.word || "";
         let artikel = item.artikel || item.article || "";
         let word = item.noun || "";
 
-        // Pokud člen není zvlášť v JSONu, zkusíme ho vyextrahovat z textu "de"
-        if (!artikel && fullDe) {
+        // Pokud chybí samostatné 'noun', musíme ho vytáhnout z 'de'
+        if (!word && fullDe) {
             let parts = fullDe.trim().split(" ");
+            // Zkontrolujeme, jestli text v 'de' už člen náhodou neobsahuje
             if (parts.length > 1 && ["der", "die", "das"].includes(parts[0].toLowerCase())) {
-                artikel = parts[0];
+                if (!artikel) artikel = parts[0];
                 word = parts.slice(1).join(" ");
             } else {
+                // Pokud tam člen není, celé 'de' je naše podstatné jméno
                 word = fullDe;
             }
         }
@@ -430,7 +432,7 @@
         return {
             artikel: artikel.trim(),
             word: word.trim(),
-            fullText: artikel ? `${artikel} ${word}` : fullDe,
+            fullText: artikel ? `${artikel.trim()} ${word.trim()}` : fullDe.trim(),
             cz: item.cz || item.translation || ""
         };
     }
@@ -541,7 +543,8 @@
             } else {
                 const genderClass = getGenderClass(parsed.artikel);
                 if (genderClass) {
-                    wordDiv.innerHTML = `<span class="${genderClass}">${parsed.artikel}</span> ${parsed.word}`;
+                    // Obarvíme rovnou celé slovo v živém HTML náhledu
+                    wordDiv.innerHTML = `<span class="${genderClass}">${parsed.fullText}</span>`;
                 } else {
                     wordDiv.textContent = parsed.fullText;
                 }
@@ -628,7 +631,7 @@
                     doc.addImage(imgData, 'PNG', x + 2, y + 2, boxW - 4, imgMaxH, undefined, 'FAST');
                 }
 
-                // Vykreslení textu s barevným členem
+                // Vykreslení textu (celé spojení s příslušnou barvou)
                 const textY = y + boxH - 3;
                 doc.setFontSize(10);
 
@@ -638,35 +641,16 @@
                 } else {
                     const artikelLower = parsed.artikel.toLowerCase();
                     
-                    // Nastavení barvy podle rodu
+                    // Nastavení barvy podle rodu pro CELÉ slovo (včetně členu)
                     if (artikelLower === 'der') doc.setTextColor(2, 132, 199);      // Modrá
                     else if (artikelLower === 'die') doc.setTextColor(220, 38, 38);  // Červená
                     else if (artikelLower === 'das') doc.setTextColor(22, 163, 74);  // Zelená
-                    else doc.setTextColor(30, 41, 59);
+                    else doc.setTextColor(30, 41, 59);                               // Výchozí tmavá barva
 
-                    if (parsed.artikel) {
-                        const artWidth = doc.getTextWidth(parsed.artikel + " ");
-                        doc.setFont("helvetica", "bold");
-                        
-                        // Vypočet pozice pro zarovnání na střed celé fráze
-                        doc.setTextColor(30, 41, 59);
-                        const nounWidth = doc.getTextWidth(parsed.word);
-                        
-                        // Znovu nastavit barvu pro člen
-                        if (artikelLower === 'der') doc.setTextColor(2, 132, 199);
-                        else if (artikelLower === 'die') doc.setTextColor(220, 38, 38);
-                        else if (artikelLower === 'das') doc.setTextColor(22, 163, 74);
-
-                        const totalW = artWidth + nounWidth;
-                        const startTxtX = x + (boxW - totalW) / 2;
-
-                        doc.text(parsed.artikel, startTxtX, textY);
-                        doc.setTextColor(30, 41, 59);
-                        doc.text(parsed.word, startTxtX + artWidth, textY);
-                    } else {
-                        doc.setTextColor(30, 41, 59);
-                        doc.text(parsed.fullText, x + boxW / 2, textY, { align: 'center' });
-                    }
+                    doc.setFont("helvetica", "bold");
+                    
+                    // Vykreslení celého textu (člen + substantivum) naráz, vycentrovaného
+                    doc.text(parsed.fullText, x + boxW / 2, textY, { align: 'center' });
                 }
             });
         };
