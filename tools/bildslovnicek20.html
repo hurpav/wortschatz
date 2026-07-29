@@ -328,11 +328,11 @@
             <h2>Živý náhled vybraného rozsahu ID</h2>
             <div class="preview-grid-container" id="previewContainer">
                 <div class="preview-page" id="previewLeft">
-                    <div class="preview-page-title">Žák 1</div>
+                    <div class="preview-page-title" id="titleLeft">Žák 1</div>
                     <div class="vocab-grid" id="gridLeft"></div>
                 </div>
                 <div class="preview-page" id="previewRight">
-                    <div class="preview-page-title">Žák 2</div>
+                    <div class="preview-page-title" id="titleRight">Žák 2</div>
                     <div class="vocab-grid" id="gridRight"></div>
                 </div>
             </div>
@@ -356,14 +356,12 @@
         
         const container = document.getElementById('wordsContainer');
         if (container) {
-            container.innerHTML = '<span class="loading-text">Načítám slovíčka ze složky /data/...</span>';
+            container.innerHTML = '<span class="loading-text">Načítám slovíčka...</span>';
         }
 
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
-        
-        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
-        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+        // Relativní cesty vhodné pro GitHub Pages
+        const primaryUrl = `../data/${key}.json`;
+        const backupUrl = `../${key}.json`;
 
         try {
             let response = await fetch(primaryUrl);
@@ -374,7 +372,7 @@
             }
             
             if (!response.ok) {
-                throw new Error(`Soubor ${key}.json nebyl nalezen ani na jedné adrese.`);
+                throw new Error(`Soubor ${key}.json nebyl nalezen.`);
             }
 
             const data = await response.json();
@@ -423,9 +421,6 @@
         const fromId = fromEl ? (parseInt(fromEl.value) || 1) : 1;
         const toId = toEl ? (parseInt(toEl.value) || 99) : 99;
 
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
-
         activeItems = allFetchedItems.filter(item => {
             if (!item) return false;
             const itemId = parseInt(item.id);
@@ -434,22 +429,112 @@
 
         activeImages = activeItems.map(item => {
             if (item.image) {
-                return item.image.startsWith('images/') ? `${window.location.origin}${parentPath}/${item.image}` : item.image;
+                return item.image.startsWith('images/') ? `../${item.image}` : item.image;
             }
-            return `${window.location.origin}${parentPath}/images/unknown.png`;
+            return '../images/unknown.png';
         });
 
         renderWordInputs();
         updatePreview();
     }
 
+    function getGenderClass(word) {
+        if (!word) return '';
+        const lower = word.trim().toLowerCase();
+        if (lower.startsWith('der ')) return 'word-der';
+        if (lower.startsWith('die ')) return 'word-die';
+        if (lower.startsWith('das ')) return 'word-das';
+        return '';
+    }
+
     function renderWordInputs() {
         const container = document.getElementById('wordsContainer');
         if (!container) return;
         container.innerHTML = '';
+
+        if (activeItems.length === 0) {
+            container.innerHTML = '<span class="loading-text">Žádná slovíčka v tomto rozsahu ID.</span>';
+            return;
+        }
+
+        activeItems.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'word-item';
+            div.innerHTML = `
+                <span style="font-weight: bold; width: 30px;">#${item.id || (index+1)}</span>
+                <input type="text" value="${item.de || item.word || ''}" style="flex: 1;" oninput="activeItems[${index}].de = this.value; updatePreview();">
+                <input type="text" value="${item.cz || item.translation || ''}" style="flex: 1;" oninput="activeItems[${index}].cz = this.value; updatePreview();">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function updatePreview() {
+        const format = document.getElementById('formatSelect').value;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const container = document.getElementById('previewContainer');
+        const previewRight = document.getElementById('previewRight');
         
-<<<<<<< HEAD
-        if (active
-=======
-        if (active
->>>>>>> 99eda4e13099788f54271fee6cc7e8671411a015
+        const gridLeft = document.getElementById('gridLeft');
+        const gridRight = document.getElementById('gridRight');
+        
+        gridLeft.innerHTML = '';
+        gridRight.innerHTML = '';
+
+        if (format === 'a4_single') {
+            container.classList.add('full-a4');
+            previewRight.style.display = 'none';
+            document.getElementById('titleLeft').textContent = 'Stánka A4';
+        } else {
+            container.classList.remove('full-a4');
+            previewRight.style.display = 'block';
+            document.getElementById('titleLeft').textContent = 'Žák 1 (A5)';
+            document.getElementById('titleRight').textContent = 'Žák 2 (A5)';
+        }
+
+        const renderBox = (item, imgUrl) => {
+            const box = document.createElement('div');
+            box.className = 'vocab-box';
+
+            const imgPlace = document.createElement('div');
+            imgPlace.className = 'vocab-image-place';
+            
+            if (imgUrl) {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.onerror = function() { this.style.display = 'none'; };
+                imgPlace.appendChild(img);
+            }
+
+            const wordDiv = document.createElement('div');
+            const wordText = item.de || item.word || '';
+            wordDiv.className = `vocab-word ${getGenderClass(wordText)}`;
+            
+            if (mode === 'practice') {
+                wordDiv.textContent = '.......................';
+                wordDiv.style.color = '#94a3b8';
+            } else {
+                wordDiv.textContent = wordText;
+            }
+
+            box.appendChild(imgPlace);
+            box.appendChild(wordDiv);
+            return box;
+        };
+
+        activeItems.forEach((item, idx) => {
+            const imgUrl = activeImages[idx];
+            gridLeft.appendChild(renderBox(item, imgUrl));
+            if (format === 'a5_duo') {
+                gridRight.appendChild(renderBox(item, imgUrl));
+            }
+        });
+    }
+
+    function generatePDF() {
+        alert("Generování PDF souboru probíhá...");
+        // Zde volání jsPDF knihovny
+    }
+</script>
+</body>
+</html>
