@@ -1,0 +1,323 @@
+{
+  "game_metadata": {
+    "title_cz": "AZ Kvíz: Nábytek v Pokoji (A2)",
+    "title_nj": "AZ Quiz: Möbel im Zimmer (A2)",
+    "theme": "Německá slovní zásoba - Nábytek",
+    "winning_node_letters": ["A", "J", "S", "Z"] 
+  },
+  
+  "letters": [
+    {
+      "id": "A",
+      "isNode": true,
+      "questions": [
+        {
+          "prompt_cz": "Kam uložíte kabáty a košile? (A)",
+          "prompt_nj": "Wo hängen Sie Jacken und Hemden hin? (A)",
+          "correct_answer_cz": "Skříň",
+          "correct_answer_nj": "der **A**rmschrank"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Dlouhá židle, na které mohou sedět dva nebo více lidí. (B)",
+          "prompt_nj": "Ein langer Stuhl für zwei oder mehr Personen. (B)",
+          "correct_answer_cz": "Lavice",
+          "correct_answer_nj": "die **B**ank"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Velká krabice nebo skříňka, kam se ukládají věci. (C)",
+          "prompt_nj": "Eine große Kiste oder ein Schrank, in dem man Dinge aufbewahrt. (C)",
+          "correct_answer_cz": "Kontejner",
+          "correct_answer_nj": "der **C**ontainer" 
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Postel pro dva lidi. (D)",
+          "prompt_nj": "Ein Bett für zwei Personen. (D)",
+          "correct_answer_cz": "Dvojlůžko",
+          "correct_answer_nj": "das **D**oppelbett"
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Police, která je speciálně určena pro roh pokoje. (E)",
+          "prompt_nj": "Ein Regal, das extra für die Ecke im Zimmer ist. (E)",
+          "correct_answer_cz": "Rohový regál",
+          "correct_answer_nj": "das **E**ckregal"
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Velké, pohodlné křeslo, které se často dává k pohovce. (F)",
+          "prompt_nj": "Ein großer, bequemer Sessel, oft neben dem Sofa. (F)",
+          "correct_answer_cz": "Křeslo",
+          "correct_answer_nj": "der **F**auteuil"
+        }
+      ]
+    },
+    {
+      "id": "G",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Místo, kde si v chodbě zavěsíme kabáty a bundy. (G)",
+          "prompt_nj": "Der Platz, wo wir im Flur Jacken aufhängen. (G)",
+          "correct_answer_cz": "Šatna / Věšák",
+          "correct_answer_nj": "die **G**arderobe"
+        }
+      ]
+    },
+    {
+      "id": "H",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Malá věc, kterou připevníme na zeď a věšíme na ni ručníky nebo kabáty. (H)",
+          "prompt_nj": "Eine kleine Sache an der Wand, wo man Handtücher oder Kleider aufhängt. (H)",
+          "correct_answer_cz": "Hák",
+          "correct_answer_nj": "der **H**aken"
+        }
+      ]
+    },
+    {
+      "id": "I",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Část, která se dává dovnitř skříně nebo krabice. (I)",
+          "prompt_nj": "Ein Teil, das man in einen Schrank oder eine Kiste hineinlegt. (I)",
+          "correct_answer_cz": "Vložka",
+          "correct_answer_nj": "der **I**nsatz"
+        }
+      ]
+    },
+    {
+      "id": "J",
+      "isNode": true,
+      "questions": [
+        {
+          "prompt_cz": "Malý stůl, který používáme na svačinu nebo rychlé jídlo. (J)",
+          "prompt_nj": "Ein kleiner Tisch, den wir für eine schnelle Mahlzeit brauchen. (J)",
+          "correct_answer_cz": "Stůl na svačinu",
+          "correct_answer_nj": "der **J**ausentisch"
+        }
+      ]
+    },
+    {
+      "id": "K",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Nejdůležitější stůl, u kterého celá rodina jí. (K)",
+          "prompt_nj": "Der wichtigste Tisch, an dem die ganze Familie isst. (K)",
+          "correct_answer_cz": "Kuchyňský stůl",
+          "correct_answer_nj": "der **K**üchentisch"
+        }
+      ]
+    },
+    {
+      "id": "L",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Předmět, který svítí a dělá světlo v místnosti. (L)",
+          "prompt_nj": "Ein Gegenstand, der Licht macht im Zimmer. (L)",
+          "correct_answer_cz": "Lampa",
+          "correct_answer_nj": "die **L**ampe"
+        }
+      ]
+    },
+    {
+      "id": "M",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Obecné slovo pro křesla, stoly, skříně a postele. (M)",
+          "prompt_nj": "Das allgemeine Wort für Stühle, Tische und Betten. (M)",
+          "correct_answer_cz": "Nábytek",
+          "correct_answer_nj": "das **M**öbelstück"
+        }
+      ]
+    },
+    {
+      "id": "N",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Malý stůl, který stojí hned vedle postele. (N)",
+          "prompt_nj": "Der kleine Tisch, der direkt neben dem Bett steht. (N)",
+          "correct_answer_cz": "Noční stolek",
+          "correct_answer_nj": "der **N**achttisch"
+        }
+      ]
+    },
+    {
+      "id": "O",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Stůl, který nemá rohy, je kulatý. (O)",
+          "prompt_nj": "Ein Tisch ohne Ecken, er ist rund. (O)",
+          "correct_answer_cz": "Oválný stůl",
+          "correct_answer_nj": "der **O**valtisch"
+        }
+      ]
+    },
+    {
+      "id": "P",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Systém polic, kam ukládáme CD nebo knihy. (P)",
+          "prompt_nj": "Ein System von Brettern, wo wir CDs oder Bücher lagern. (P)",
+          "correct_answer_cz": "Policový regál",
+          "correct_answer_nj": "das **P**lattenregal"
+        }
+      ]
+    },
+    {
+      "id": "Q",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Tvar, který je jako kostka. (Q)",
+          "prompt_nj": "Eine Form, die wie ein Würfel ist. (Q)",
+          "correct_answer_cz": "Kvadr",
+          "correct_answer_nj": "der **Q**uader"
+        }
+      ]
+    },
+    {
+      "id": "R",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Nábytek s mnoha policemi, kde stojí knihy. (R)",
+          "prompt_nj": "Ein Möbelstück mit vielen Brettern für Bücher. (R)",
+          "correct_answer_cz": "Regál",
+          "correct_answer_nj": "das **R**egal"
+        }
+      ]
+    },
+    {
+      "id": "S",
+      "isNode": true,
+      "questions": [
+        {
+          "prompt_cz": "Stůl, u kterého sedíme, když píšeme úkoly. (S)",
+          "prompt_nj": "Der Tisch, an dem wir sitzen, wenn wir Hausaufgaben machen. (S)",
+          "correct_answer_cz": "Psací stůl",
+          "correct_answer_nj": "der **S**chreibtisch"
+        }
+      ]
+    },
+    {
+      "id": "T",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Obecné slovo pro jakoukoliv plochou desku se 4 nohami. (T)",
+          "prompt_nj": "Das allgemeine Wort für jede Platte mit vier Beinen. (T)",
+          "correct_answer_cz": "Stůl",
+          "correct_answer_nj": "der **T**isch"
+        }
+      ]
+    },
+    {
+      "id": "U",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Látka, která dělá křeslo nebo pohovku pohodlnou. (U)",
+          "prompt_nj": "Der Stoff, der einen Sessel oder ein Sofa bequem macht. (U)",
+          "correct_answer_cz": "Polstrování/Podložka",
+          "correct_answer_nj": "die **U**nterlage"
+        }
+      ]
+    },
+    {
+      "id": "V",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "První místnost v domě, kam vstoupíte. (V)",
+          "prompt_nj": "Der erste Raum im Haus, den Sie betreten. (V)",
+          "correct_answer_cz": "Předsíň",
+          "correct_answer_nj": "das **V**orzimmer"
+        }
+      ]
+    },
+    {
+      "id": "W",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Skříň, která je speciálně pro uložení spodního prádla a ručníků. (W)",
+          "prompt_nj": "Ein Schrank nur für Unterwäsche und Handtücher. (W)",
+          "correct_answer_cz": "Prádelník",
+          "correct_answer_nj": "der **W**äscheschrank"
+        }
+      ]
+    },
+    {
+      "id": "X",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Stůl s překříženýma nohama. (X)",
+          "prompt_nj": "Ein Tisch mit gekreuzten Beinen. (X)",
+          "correct_answer_cz": "Stůl s X-nohama",
+          "correct_answer_nj": "der **X**-Beintisch"
+        }
+      ]
+    },
+    {
+      "id": "Y",
+      "isNode": false,
+      "questions": [
+        {
+          "prompt_cz": "Regál, který má speciální tvary pro dekorace. (Y)",
+          "prompt_nj": "Ein Regal mit speziellen Formen für Dekorationen. (Y)",
+          "correct_answer_cz": "Ypsilonový regál",
+          "correct_answer_nj": "das **Y**psilonregal" 
+        }
+      ]
+    },
+    {
+      "id": "Z",
+      "isNode": true,
+      "questions": [
+        {
+          "prompt_cz": "Místo na spaní navíc, když přijde návštěva. (Z)",
+          "prompt_nj": "Ein Schlafplatz extra, wenn Besuch kommt. (Z)",
+          "correct_answer_cz": "Přistýlka",
+          "correct_answer_nj": "das **Z**usatzbett"
+        }
+      ]
+    }
+  ]
+}
