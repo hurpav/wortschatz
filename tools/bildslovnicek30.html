@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wortschatz - Generátor procvičování</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none; }
+            .print-only { display: block; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen p-6">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 no-print mb-8">
+        <h1 class="text-2xl font-bold text-indigo-600 mb-4">🖨️ Generátor procvičování slovíček s nápovědou</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+                <label class="block font-semibold mb-2">Vyber téma:</label>
+                <select id="themeSelect" class="w-full p-2 border rounded-lg">
+                    <option value="schulsachen">Školní potřeby (Schulsachen)</option>
+                    <option value="essen">Jídlo (Essen)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-semibold mb-2">Typ nápovědy v pracovním listu:</label>
+                <select id="hintType" class="w-full p-2 border rounded-lg">
+                    <option value="none">Žádná nápověda (volné pole)</option>
+                    <option value="article">Pouze člen (např. der _____)</option>
+                    <option value="article-letter">Člen + počáteční písmeno (např. der B___)</option>
+                    <option value="anagram">Anagram (přeházená písmena)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button onclick="generatePreview()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Zobrazit náhled</button>
+            <button onclick="exportToPDF()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">Stáhnout PDF</button>
+        </div>
+    </div>
+
+    <div id="previewArea" class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8 print:shadow-none">
+        <div class="text-center mb-6 border-b pb-4">
+            <h2 class="text-xl font-bold">Pracovní list: Slovní zásoba</h2>
+            <p class="text-sm text-slate-500">Jméno: .................................................... Třída: .......... Datum: ..............</p>
+        </div>
+        <div id="exerciseGrid" class="grid grid-cols-2 gap-4">
+            </div>
+    </div>
+
+    <script>
+        // Ukázková databáze (případně načítáš z JSONu na GitHubu)
+        const database = {
+            schulsachen: [
+                { word: "Bleistift", article: "der", translation: "tužka", image: "https://raw.githubusercontent.com/hurpav/wortschatz/main/images/bleistift.png" },
+                { word: "Heft", article: "das", translation: "sešit", image: "https://raw.githubusercontent.com/hurpav/wortschatz/main/images/heft.png" },
+                { word: "Tasche", article: "die", translation: "taška", image: "https://raw.githubusercontent.com/hurpav/wortschatz/main/images/tasche.png" },
+                { word: "Lineal", article: "das", translation: "pravítko", image: "https://raw.githubusercontent.com/hurpav/wortschatz/main/images/lineal.png" }
+            ],
+            essen: [
+                { word: "Apfel", article: "der", translation: "jablko", image: "https://raw.githubusercontent.com/hurpav/wortschatz/main/images/apfel.png" },
+                { word: "Brot", article: "das", translation: "chléb", image: "https://raw.githubusercontent.com/hurpav/wortschatz/main/images/brot.png" }
+            ]
+        };
+
+        // Pomocná funkce pro vytvoření anagramu (přeházení písmen)
+        function shuffleWord(str) {
+            let arr = str.split('');
+            let shuffled;
+            do {
+                arr.sort(() => Math.random() - 0.5);
+                shuffled = arr.join('');
+            } while (shuffled === str && str.length > 1); // Zajistí, že se liší od originálu
+            return shuffled;
+        }
+
+        // Generování textu nápovědy podle zvolené strategie
+        function getHintText(item, type) {
+            switch(type) {
+                case 'article':
+                    return `${item.article} ....................`;
+                case 'article-letter':
+                    return `${item.article} ${item.word[0]}...`;
+                case 'anagram':
+                    return `(${shuffleWord(item.word)}) ....................`;
+                default:
+                    return `....................`;
+            }
+        }
+
+        function generatePreview() {
+            const theme = document.getElementById('themeSelect').value;
+            const hintType = document.getElementById('hintType').value;
+            const items = database[theme] || [];
+            const grid = document.getElementById('exerciseGrid');
+
+            grid.innerHTML = '';
+
+            items.forEach((item, index) => {
+                const hintOutput = getHintText(item, hintType);
+                
+                const card = document.createElement('div');
+                card.className = "flex items-center border p-3 rounded-lg bg-slate-50 gap-4";
+                card.innerHTML = `
+                    <div class="text-lg font-bold text-slate-400 w-6">${index + 1}.</div>
+                    <div class="w-16 h-16 bg-white border rounded flex items-center justify-center p-1">
+                        <img src="${item.image}" alt="${item.word}" class="max-h-full max-w-full object-contain" onerror="this.src='https://placehold.co/60x60?text=Obrázek'">
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-sm font-semibold text-slate-600">${item.translation}</div>
+                        <div class="text-lg font-mono font-bold text-indigo-700 mt-1">${hintOutput}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Pracovní list: Slovní zásoba", 20, 20);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.text("Jméno: ........................................................ Třída: .......... Datum: ..............", 20, 30);
+
+            const theme = document.getElementById('themeSelect').value;
+            const hintType = document.getElementById('hintType').value;
+            const items = database[theme] || [];
+
+            let y = 45;
+            items.forEach((item, index) => {
+                const hintOutput = getHintText(item, hintType);
+                
+                doc.setFontSize(12);
+                doc.text(`${index + 1}. ${item.translation} ->  ${hintOutput}`, 20, y);
+                y += 15;
+
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+            });
+
+            doc.save("pracovni-list-slova.pdf");
+        }
+
+        // Spustit náhled při startu
+        window.onload = generatePreview;
+        document.getElementById('hintType').addEventListener('change', generatePreview);
+        document.getElementById('themeSelect').addEventListener('change', generatePreview);
+    </script>
+</body>
+</html>
