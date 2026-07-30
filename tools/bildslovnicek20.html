@@ -14,7 +14,7 @@
             --text: #1e293b;
             --border: #cbd5e1;
             
-            /* Barvy pro německé členy v náhledu */
+            /* Barvy pro německé členy */
             --der-color: #0284c7;  /* Modrá */
             --die-color: #dc2626;  /* Červená */
             --das-color: #16a34a;  /* Zelená */
@@ -328,11 +328,11 @@
             <h2>Živý náhled vybraného rozsahu ID</h2>
             <div class="preview-grid-container" id="previewContainer">
                 <div class="preview-page" id="previewLeft">
-                    <div class="preview-page-title">Žák 1</div>
+                    <div class="preview-page-title" id="titleLeft">Žák 1</div>
                     <div class="vocab-grid" id="gridLeft"></div>
                 </div>
                 <div class="preview-page" id="previewRight">
-                    <div class="preview-page-title">Žák 2</div>
+                    <div class="preview-page-title" id="titleRight">Žák 2</div>
                     <div class="vocab-grid" id="gridRight"></div>
                 </div>
             </div>
@@ -343,7 +343,7 @@
 <script>
     let allFetchedItems = []; 
     let activeItems = [];     
-    let activeImages = [];    
+    let activeImages = [];   
 
     document.addEventListener("DOMContentLoaded", function() {
         loadTheme();
@@ -356,14 +356,11 @@
         
         const container = document.getElementById('wordsContainer');
         if (container) {
-            container.innerHTML = '<span class="loading-text">Načítám slovíčka ze složky /data/...</span>';
+            container.innerHTML = '<span class="loading-text">Načítám slovíčka...</span>';
         }
 
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
-        
-        const primaryUrl = `${window.location.origin}${parentPath}/data/${key}.json`;
-        const backupUrl = `${window.location.origin}${parentPath}/${key}.json`;
+        const primaryUrl = `../data/${key}.json`;
+        const backupUrl = `../${key}.json`;
 
         try {
             let response = await fetch(primaryUrl);
@@ -374,7 +371,7 @@
             }
             
             if (!response.ok) {
-                throw new Error(`Soubor ${key}.json nebyl nalezen ani na jedné adrese.`);
+                throw new Error(`Soubor ${key}.json nebyl nalezen.`);
             }
 
             const data = await response.json();
@@ -413,6 +410,33 @@
         }
     }
 
+    // OPRAVENÁ pomocná funkce pro správné vytažení člene a podstatného jména
+    function parseWordData(item) {
+        let fullDe = item.de || item.word || "";
+        let artikel = item.artikel || item.article || "";
+        let word = item.noun || "";
+
+        // Pokud chybí samostatné 'noun', musíme ho vytáhnout z 'de'
+        if (!word && fullDe) {
+            let parts = fullDe.trim().split(" ");
+            // Zkontrolujeme, jestli text v 'de' už člen náhodou neobsahuje
+            if (parts.length > 1 && ["der", "die", "das"].includes(parts[0].toLowerCase())) {
+                if (!artikel) artikel = parts[0];
+                word = parts.slice(1).join(" ");
+            } else {
+                // Pokud tam člen není, celé 'de' je naše podstatné jméno
+                word = fullDe;
+            }
+        }
+
+        return {
+            artikel: artikel.trim(),
+            word: word.trim(),
+            fullText: artikel ? `${artikel.trim()} ${word.trim()}` : fullDe.trim(),
+            cz: item.cz || item.translation || ""
+        };
+    }
+
     function filterWords() {
         if (!Array.isArray(allFetchedItems)) {
             allFetchedItems = [];
@@ -423,9 +447,6 @@
         const fromId = fromEl ? (parseInt(fromEl.value) || 1) : 1;
         const toId = toEl ? (parseInt(toEl.value) || 99) : 99;
 
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-        const parentPath = basePath.substring(0, basePath.lastIndexOf('/'));
-
         activeItems = allFetchedItems.filter(item => {
             if (!item) return false;
             const itemId = parseInt(item.id);
@@ -434,22 +455,224 @@
 
         activeImages = activeItems.map(item => {
             if (item.image) {
-                return item.image.startsWith('images/') ? `${window.location.origin}${parentPath}/${item.image}` : item.image;
+                return item.image.startsWith('images/') ? `../${item.image}` : item.image;
             }
-            return `${window.location.origin}${parentPath}/images/unknown.png`;
+            return '../images/unknown.png';
         });
 
         renderWordInputs();
         updatePreview();
     }
 
+    function getGenderClass(artikel) {
+        if (!artikel) return '';
+        const lower = artikel.trim().toLowerCase();
+        if (lower === 'der') return 'word-der';
+        if (lower === 'die') return 'word-die';
+        if (lower === 'das') return 'word-das';
+        return '';
+    }
+
     function renderWordInputs() {
         const container = document.getElementById('wordsContainer');
         if (!container) return;
         container.innerHTML = '';
+
+        if (activeItems.length === 0) {
+            container.innerHTML = '<span class="loading-text">Žádná slovíčka v tomto rozsahu ID.</span>';
+            return;
+        }
+
+        activeItems.forEach((item, index) => {
+            const parsed = parseWordData(item);
+            const div = document.createElement('div');
+            div.className = 'word-item';
+            div.innerHTML = `
+                <span style="font-weight: bold; width: 30px;">#${item.id || (index+1)}</span>
+                <input type="text" value="${parsed.fullText}" style="flex: 1;" oninput="activeItems[${index}].de = this.value; updatePreview();">
+                <input type="text" value="${parsed.cz}" style="flex: 1;" oninput="activeItems[${index}].cz = this.value; updatePreview();">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function updatePreview() {
+        const format = document.getElementById('formatSelect').value;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const container = document.getElementById('previewContainer');
+        const previewRight = document.getElementById('previewRight');
         
-<<<<<<< HEAD
-        if (active
-=======
-        if (active
->>>>>>> 99eda4e13099788f54271fee6cc7e8671411a015
+        const gridLeft = document.getElementById('gridLeft');
+        const gridRight = document.getElementById('gridRight');
+        
+        gridLeft.innerHTML = '';
+        gridRight.innerHTML = '';
+
+        if (format === 'a4_single') {
+            container.classList.add('full-a4');
+            previewRight.style.display = 'none';
+            document.getElementById('titleLeft').textContent = 'Stránka A4';
+        } else {
+            container.classList.remove('full-a4');
+            previewRight.style.display = 'block';
+            document.getElementById('titleLeft').textContent = 'Žák 1 (A5)';
+            document.getElementById('titleRight').textContent = 'Žák 2 (A5)';
+        }
+
+        const renderBox = (item, imgUrl) => {
+            const parsed = parseWordData(item);
+            const box = document.createElement('div');
+            box.className = 'vocab-box';
+
+            const imgPlace = document.createElement('div');
+            imgPlace.className = 'vocab-image-place';
+            
+            if (imgUrl) {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.onerror = function() { this.style.display = 'none'; };
+                imgPlace.appendChild(img);
+            }
+
+            const wordDiv = document.createElement('div');
+            wordDiv.className = 'vocab-word';
+            
+            if (mode === 'practice') {
+                wordDiv.textContent = '.......................';
+                wordDiv.style.color = '#94a3b8';
+            } else {
+                const genderClass = getGenderClass(parsed.artikel);
+                if (genderClass) {
+                    // Obarvíme rovnou celé slovo v živém HTML náhledu
+                    wordDiv.innerHTML = `<span class="${genderClass}">${parsed.fullText}</span>`;
+                } else {
+                    wordDiv.textContent = parsed.fullText;
+                }
+            }
+
+            box.appendChild(imgPlace);
+            box.appendChild(wordDiv);
+            return box;
+        };
+
+        activeItems.forEach((item, idx) => {
+            const imgUrl = activeImages[idx];
+            gridLeft.appendChild(renderBox(item, imgUrl));
+            if (format === 'a5_duo') {
+                gridRight.appendChild(renderBox(item, imgUrl));
+            }
+        });
+    }
+
+    // Pomocná funkce načtení obrázku do základu Base64 pro PDF
+    function loadImageBase64(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = () => resolve(null);
+            img.src = url;
+        });
+    }
+
+    async function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const format = document.getElementById('formatSelect').value;
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+
+        // Vytvoření plátna jsPDF
+        let doc;
+        if (format === 'a5_duo') {
+            doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        } else {
+            doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        }
+
+        const themeName = document.getElementById('themeSelect').options[document.getElementById('themeSelect').selectedIndex].text;
+
+        // Načtení všech obrázků pro PDF
+        const loadedImages = await Promise.all(activeImages.map(url => loadImageBase64(url)));
+
+        const drawGrid = (startX, startY, width, height) => {
+            doc.setFontSize(14);
+            doc.setTextColor(15, 118, 110);
+            doc.text(`Bildwörterbuch: ${themeName}`, startX + width / 2, startY + 8, { align: 'center' });
+
+            const cols = 3;
+            const rows = Math.ceil(activeItems.length / cols) || 1;
+            const margin = 5;
+            const boxW = (width - (cols + 1) * margin) / cols;
+            const boxH = (height - 20 - (rows + 1) * margin) / rows;
+
+            activeItems.forEach((item, idx) => {
+                const parsed = parseWordData(item);
+                const col = idx % cols;
+                const row = Math.floor(idx / cols);
+
+                const x = startX + margin + col * (boxW + margin);
+                const y = startY + 18 + row * (boxH + margin);
+
+                // Rámeček karty
+                doc.setDrawColor(203, 213, 225);
+                doc.setFillColor(250, 250, 250);
+                doc.roundedRect(x, y, boxW, boxH, 2, 2, 'FD');
+
+                // Vložení obrázku
+                const imgData = loadedImages[idx];
+                const imgMaxH = boxH - 14;
+                if (imgData) {
+                    doc.addImage(imgData, 'PNG', x + 2, y + 2, boxW - 4, imgMaxH, undefined, 'FAST');
+                }
+
+                // Vykreslení textu (celé spojení s příslušnou barvou)
+                const textY = y + boxH - 3;
+                doc.setFontSize(10);
+
+                if (mode === 'practice') {
+                    doc.setTextColor(148, 163, 184);
+                    doc.text('.......................', x + boxW / 2, textY, { align: 'center' });
+                } else {
+                    const artikelLower = parsed.artikel.toLowerCase();
+                    
+                    // Nastavení barvy podle rodu pro CELÉ slovo (včetně členu)
+                    if (artikelLower === 'der') doc.setTextColor(2, 132, 199);      // Modrá
+                    else if (artikelLower === 'die') doc.setTextColor(220, 38, 38);  // Červená
+                    else if (artikelLower === 'das') doc.setTextColor(22, 163, 74);  // Zelená
+                    else doc.setTextColor(30, 41, 59);                               // Výchozí tmavá barva
+
+                    doc.setFont("helvetica", "bold");
+                    
+                    // Vykreslení celého textu (člen + substantivum) naráz, vycentrovaného
+                    doc.text(parsed.fullText, x + boxW / 2, textY, { align: 'center' });
+                }
+            });
+        };
+
+        if (format === 'a5_duo') {
+            // Stránka 1: Žák 1 (vlevo), Žák 2 (vpravo)
+            drawGrid(5, 5, 140, 200);
+            
+            // Dělící čára pro střih
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineDashPattern([2, 2], 0);
+            doc.line(148.5, 5, 148.5, 205);
+            doc.setLineDashPattern([], 0);
+
+            drawGrid(152, 5, 140, 200);
+        } else {
+            // Stránka 1: Velká A4
+            drawGrid(10, 10, 190, 277);
+        }
+
+        doc.save(`Bildworterbuch_${themeName}.pdf`);
+    }
+</script>
+</body>
+</html>
