@@ -1,0 +1,29 @@
+function parseWordData(item) {
+
+    const artikel = (item.artikel || item.article || "").trim();
+    const word = (item.de || item.word || "").trim();
+
+    return {
+        id: item.id || 0,
+
+        artikel: artikel,
+        word: word,
+        fullText: artikel ? `${artikel} ${word}` : word,
+
+        plural: item.plural || "",
+        cz: item.cz || "",
+
+        lekce: item.lekce || "",
+        tema: item.tema || "",
+        kategorie: item.kategorie || "",
+        tagy: item.tagy || [],
+
+        image: item.image || "",
+
+        priklad_de: item.priklad_de || "",
+        priklad_cz: item.priklad_cz || "",
+
+        audio_de: item.audio_de || "",
+        audio_veta: item.audio_veta || ""
+    };
+}
